@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>秒杀大厅 — SeckillPro</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --cyan:       #00D4FF;
+      --cyan-dim:   rgba(0, 212, 255, 0.12);
+      --cyan-glow:  rgba(0, 212, 255, 0.3);
+      --gold:       #FFB800;
+      --gold-dim:   rgba(255, 184, 0, 0.12);
+      --purple:     #7C3AED;
+      --purple-dim: rgba(124, 58, 237, 0.15);
+      --bg:         #04050f;
+      --bg2:        #080c1a;
+      --surface:    rgba(255, 255, 255, 0.035);
+      --surface-h:  rgba(0, 212, 255, 0.06);
+      --border:     rgba(0, 212, 255, 0.1);
+      --border-h:   rgba(0, 212, 255, 0.28);
+      --text:       #E8F4FF;
+      --muted:      rgba(232, 244, 255, 0.45);
+      --green:      #00E5A0;
+      --amber:      #FFB800;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── 鼠标光晕 ── */
+    #cursor-glow {
+      position: fixed;
+      width: 420px;
+      height: 420px;
+      border-radius: 50%;
+      background: radial-gradient(circle,
+        rgba(0,212,255,0.06) 0%,
+        rgba(124,58,237,0.03) 45%,
+        transparent 70%);
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      transition: left 0.1s ease, top 0.1s ease;
+      z-index: 0;
+    }
+
+    /* ── Navbar ── */
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(4, 5, 15, 0.88);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      height: 64px;
+      display: flex;
+      align-items: center;
+      padding: 0 40px;
+      gap: 20px;
+    }
+
+    .nav-logo {
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--cyan);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      filter: drop-shadow(0 0 10px rgba(0,212,255,0.4));
+    }
+
+    .nav-logo svg { width: 18px; height: 18px; fill: var(--cyan); }
+
+    .nav-tabs { display: flex; gap: 2px; margin-left: 20px; }
+
+    .nav-tab {
+      padding: 7px 15px;
+      border-radius: 8px;
+      font-size: 0.86rem;
+      font-weight: 500;
+      color: var(--muted);
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      background: none;
+      border: none;
+      font-family: inherit;
+    }
+
+    .nav-tab:hover { background: var(--surface-h); color: var(--text); }
+    .nav-tab.active { background: var(--cyan-dim); color: var(--cyan); border: 1px solid rgba(0,212,255,0.18); }
+
+    .nav-spacer { flex: 1; }
+
+    .nav-search {
+      display: flex;
+      align-items: center;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0 13px;
+      gap: 8px;
+      height: 36px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .nav-search:focus-within {
+      border-color: var(--cyan);
+      box-shadow: 0 0 0 3px rgba(0,212,255,0.08), 0 0 14px rgba(0,212,255,0.06);
+    }
+
+    .nav-search input {
+      background: none; border: none; outline: none;
+      color: var(--text); font-size: 0.86rem; font-family: inherit; width: 175px;
+    }
+
+    .nav-search input::placeholder { color: var(--muted); }
+
+    .nav-search svg { color: var(--muted); width: 15px; height: 15px; flex-shrink: 0; }
+
+    .nav-user {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 5px 13px 5px 7px;
+      border-radius: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+      position: relative;
+    }
+
+    .nav-user:hover { background: var(--surface-h); border-color: var(--border-h); }
+
+    .nav-avatar {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--cyan), #0099bb);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.82rem; font-weight: 700; flex-shrink: 0;
+      color: #000;
+      box-shadow: 0 0 12px rgba(0,212,255,0.3);
+    }
+
+    .nav-name { font-size: 0.86rem; font-weight: 600; max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .nav-chevron { color: var(--muted); font-size: 0.7rem; }
+
+    /* 下拉菜单 */
+    .user-dropdown {
+      position: absolute;
+      top: calc(100% + 10px);
+      right: 0;
+      background: #0d1020;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 6px;
+      min-width: 155px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.6), 0 0 20px rgba(0,212,255,0.04);
+      display: none;
+      z-index: 200;
+      animation: dropIn 0.18s ease;
+    }
+
+    @keyframes dropIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .user-dropdown.open { display: block; }
+
+    .dd-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 9px 13px;
+      border-radius: 8px;
+      font-size: 0.86rem;
+      cursor: pointer;
+      color: var(--muted);
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .dd-item svg { width: 15px; height: 15px; flex-shrink: 0; }
+    .dd-item:hover { background: var(--surface-h); color: var(--text); }
+    .dd-item.danger:hover { background: rgba(255,60,60,0.1); color: #ff8080; }
+
+    /* ── 主内容 ── */
+    .main { position: relative; z-index: 1; padding: 0 40px 60px; }
+
+    /* ── Hero ── */
+    .hero {
+      margin: 28px 0;
+      border-radius: 20px;
+      background: linear-gradient(120deg,
+        rgba(0,212,255,0.08) 0%,
+        rgba(124,58,237,0.06) 50%,
+        rgba(4,5,15,0.95) 100%);
+      border: 1px solid var(--border);
+      padding: 36px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      width: 300px; height: 300px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0,212,255,0.08), transparent 70%);
+      top: -80px; left: -60px;
+      pointer-events: none;
+    }
+
+    .hero::after {
+      content: '';
+      position: absolute;
+      width: 200px; height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(124,58,237,0.1), transparent 70%);
+      bottom: -40px; right: 200px;
+      pointer-events: none;
+    }
+
+    .hero-left { position: relative; z-index: 1; }
+
+    .hero-left h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 8px;
+    }
+
+    .hero-left h1 span {
+      background: linear-gradient(90deg, var(--cyan), #00a8cc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-left p { color: var(--muted); font-size: 0.92rem; margin-bottom: 22px; }
+
+    /* 倒计时块 */
+    .hero-countdown { display: flex; align-items: center; gap: 8px; }
+
+    .countdown-label { font-size: 0.82rem; color: var(--muted); margin-right: 4px; }
+
+    .time-block {
+      background: rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,184,0,0.35);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 1.45rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      min-width: 52px;
+      text-align: center;
+      color: var(--gold);
+      box-shadow: 0 0 14px rgba(255,184,0,0.12), inset 0 0 8px rgba(255,184,0,0.04);
+      transition: box-shadow 0.3s;
+    }
+
+    .time-block.pulse {
+      animation: goldPulse 0.4s ease;
+    }
+
+    @keyframes goldPulse {
+      0%   { box-shadow: 0 0 14px rgba(255,184,0,0.12); }
+      50%  { box-shadow: 0 0 28px rgba(255,184,0,0.5); }
+      100% { box-shadow: 0 0 14px rgba(255,184,0,0.12); }
+    }
+
+    .time-sep { font-size: 1.35rem; font-weight: 800; color: var(--gold); opacity: 0.5; }
+
+    /* ── 区块标题 ── */
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 36px 0 18px;
+    }
+
+    .section-head h2 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-head h2 svg { width: 18px; height: 18px; }
+
+    .sec-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+
+    .sec-badge.live {
+      background: linear-gradient(90deg, var(--cyan), #00a8cc);
+      color: #000;
+      box-shadow: 0 0 12px rgba(0,212,255,0.35);
+    }
+
+    .sec-badge.soon {
+      background: linear-gradient(90deg, var(--purple), #6d28d9);
+      color: #fff;
+    }
+
+    .section-head a {
+      font-size: 0.82rem;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.2s;
+      cursor: pointer;
+    }
+
+    .section-head a:hover { color: var(--cyan); }
+
+    /* ── 商品网格 ── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 18px;
+    }
+
+    /* ── 卡片 ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      overflow: visible;
+      cursor: pointer;
+      transition:
+        box-shadow 0.3s,
+        border-color 0.7s,
+        background 0.7s;
+      position: relative;
+      transform-style: preserve-3d;
+      will-change: transform;
+    }
+
+    .card-inner {
+      border-radius: 18px;
+      overflow: hidden;
+      position: relative;
+      background: var(--surface);
+    }
+
+    /* 高光层（跟随鼠标） */
+    .card-shine {
+      position: absolute;
+      inset: 0;
+      border-radius: 18px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+      background: radial-gradient(circle at 50% 50%,
+        rgba(0,212,255,0.08),
+        transparent 60%);
+      z-index: 2;
+    }
+
+    .card:hover .card-shine { opacity: 1; }
+
+    .card:hover {
+      box-shadow:
+        0 20px 50px rgba(0,0,0,0.5),
+        0 0 0 1px var(--border-h),
+        0 0 30px rgba(0,212,255,0.06);
+      border-color: var(--border-h);
+    }
+
+    /* 标签 */
+    .card-tag {
+      position: absolute;
+      top: 12px; left: 12px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+      z-index: 3;
+      letter-spacing: 0.3px;
+    }
+
+    .card-tag.hot  { background: rgba(255,184,0,0.9); color: #000; box-shadow: 0 0 10px rgba(255,184,0,0.4); }
+    .card-tag.new  { background: rgba(0,212,255,0.85); color: #000; box-shadow: 0 0 10px rgba(0,212,255,0.4); }
+    .card-tag.soon { background: rgba(124,58,237,0.85); color: #fff; }
+
+    /* 商品图区 */
+    .card-img {
+      height: 155px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card-img-real { width: 100%; height: 100%; object-fit: cover; position: relative; z-index: 1; transition: transform 0.3s; }
+    .card:hover .card-img-real { transform: scale(1.06); }
+
+    .card-img::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      opacity: 0.06;
+      background: radial-gradient(circle, var(--cyan), transparent);
+    }
+
+    /* ── 紧迫感效果 ── */
+
+    .card.urgency-safe {
+      border-color: rgba(0, 212, 255, 0.12);
+    }
+
+    .card.urgency-warning {
+      border-color: rgba(255, 184, 0, 0.35);
+      box-shadow: 0 0 20px rgba(255, 184, 0, 0.1);
+    }
+
+    .card.urgency-warning .t { color: var(--amber); }
+
+    .card.urgency-danger {
+      border-color: rgba(255, 70, 70, 0.45);
+      box-shadow: 0 0 25px rgba(255, 70, 70, 0.15);
+      animation: squeezePulse 0.75s ease-in-out infinite;
+    }
+
+    .card.urgency-danger .t { color: #FF5555; }
+
+    @keyframes squeezePulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scaleX(0.955) scaleY(0.98); }
+    }
+
+    .card.urgency-critical {
+      border-color: rgba(255, 30, 30, 0.6);
+      box-shadow: 0 0 35px rgba(255, 30, 30, 0.22), inset 0 0 40px rgba(255,0,0,0.06);
+      animation: squeezePulseFast 0.4s ease-in-out infinite;
+      background: rgba(255, 0, 0, 0.05);
+    }
+
+    .card.urgency-critical .t {
+      color: #FF2020;
+      animation: flashText 0.45s ease-in-out infinite;
+    }
+
+    @keyframes squeezePulseFast {
+      0%, 100% { transform: scale(1); }
+      30% { transform: scaleX(0.93) scaleY(0.965); }
+      70% { transform: scaleX(0.97); }
+    }
+
+    @keyframes flashText {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.25; }
+    }
+
+    /* 进度条 */
+    .card-progress { padding: 0 16px; margin-top: -2px; }
+
+    .progress-track {
+      height: 3px;
+      background: rgba(255,255,255,0.07);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 1.2s ease;
+    }
+
+    .progress-fill.normal { background: linear-gradient(90deg, var(--cyan), #00a8cc); }
+    .progress-fill.urgent { background: linear-gradient(90deg, var(--gold), #ff9500); animation: urgentPulse 1.5s ease-in-out infinite; }
+
+    @keyframes urgentPulse {
+      0%,100% { box-shadow: none; }
+      50% { box-shadow: 0 0 8px rgba(255,184,0,0.6); }
+    }
+
+    .progress-meta {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 5px;
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+
+    .progress-meta .urgent-text { color: var(--gold); font-weight: 600; }
+
+    /* 卡片信息 */
+    .card-body { padding: 13px 16px 15px; }
+
+    .card-name {
+      font-size: 0.92rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .card-price {
+      display: flex;
+      align-items: baseline;
+      gap: 7px;
+      margin-bottom: 9px;
+    }
+
+    .price-now {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--gold);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .price-old {
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-decoration: line-through;
+    }
+
+    .price-off {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 6px;
+      background: var(--gold-dim);
+      color: var(--gold);
+      border: 1px solid rgba(255,184,0,0.2);
+      margin-left: auto;
+    }
+
+    .card-timer {
+      font-size: 0.76rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: 11px;
+    }
+
+    .card-timer svg { width: 12px; height: 12px; flex-shrink: 0; }
+    .card-timer .t { font-weight: 700; color: var(--amber); font-variant-numeric: tabular-nums; }
+
+    /* 抢购按钮 */
+    .card-btn {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid rgba(0,212,255,0.3);
+      border-radius: 10px;
+      background: linear-gradient(135deg, rgba(0,212,255,0.14), rgba(0,168,204,0.08));
+      color: var(--cyan);
+      font-size: 0.88rem;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      opacity: 0;
+      transform: translateY(5px);
+      transition: opacity 0.22s, transform 0.22s, box-shadow 0.2s, background 0.2s;
+      position: relative;
+      overflow: hidden;
+      letter-spacing: 0.3px;
+    }
+
+    .card:hover .card-btn { opacity: 1; transform: translateY(0); }
+
+    .card-btn:hover {
+      background: linear-gradient(135deg, rgba(0,212,255,0.24), rgba(0,168,204,0.16));
+      box-shadow: 0 0 20px rgba(0,212,255,0.25);
+      border-color: var(--cyan);
+    }
+
+    .card-btn.disabled {
+      border-color: rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.04);
+      color: var(--muted);
+      cursor: not-allowed;
+    }
+
+    .card-btn.disabled:hover { box-shadow: none; background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.1); }
+
+    /* Ripple */
+    .ripple {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(0,212,255,0.25);
+      transform: scale(0);
+      animation: rippleAnim 0.55s linear;
+      pointer-events: none;
+    }
+
+    @keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: #0d1020;
+      border: 1px solid var(--border-h);
+      border-radius: 14px;
+      padding: 13px 22px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.6), 0 0 20px rgba(0,212,255,0.08);
+      transition: transform 0.35s cubic-bezier(.4,0,.2,1), opacity 0.35s;
+      opacity: 0;
+      z-index: 999;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      white-space: nowrap;
+      color: var(--text);
+    }
+
+    #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+    /* ── Footer ── */
+    .footer {
+      margin-top: 60px;
+      border-top: 1px solid var(--border);
+      padding: 26px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    /* ── 响应式 ── */
+    @media (max-width: 640px) {
+      .navbar { padding: 0 18px; }
+      .main   { padding: 0 18px 40px; }
+      .hero   { padding: 22px; flex-direction: column; align-items: flex-start; gap: 18px; }
+      .nav-search, .nav-tabs { display: none; }
+      .footer { flex-direction: column; gap: 8px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="cursor-glow"></div>
+
+<nav class="navbar">
+  <div class="nav-logo">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+    SeckillPro
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active">秒杀大厅</button>
+    <button class="nav-tab">品牌专区</button>
+    <button class="nav-tab">排行榜</button>
+    <button class="nav-tab">我的订单</button>
+  </div>
+  <div class="nav-spacer"></div>
+  <div class="nav-search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" placeholder="搜索商品..." aria-label="搜索商品" />
+  </div>
+  <div class="nav-user" id="navUser" onclick="toggleDropdown()">
+    <div class="nav-avatar" id="navAvatar">U</div>
+    <span class="nav-name" id="navName">用户</span>
+    <span class="nav-chevron">▾</span>
+    <div class="user-dropdown" id="userDropdown">
+      <div class="dd-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        个人中心
+      </div>
+      <div class="dd-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        我的订单
+      </div>
+      <div class="dd-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        我的收藏
+      </div>
+      <div class="dd-item danger" onclick="logout()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        退出登录
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="main">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-left">
+      <h1>今日秒杀<br><span>限时抢购，速度决定一切</span></h1>
+      <p>每天 10:00 / 14:00 / 20:00 准时开抢，错过等明天</p>
+      <div class="hero-countdown">
+        <span class="countdown-label">下场开抢</span>
+        <div class="time-block" id="th">00</div>
+        <span class="time-sep">:</span>
+        <div class="time-block" id="tm">00</div>
+        <span class="time-sep">:</span>
+        <div class="time-block" id="ts">00</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 正在秒杀 -->
+  <div class="section-head">
+    <h2>
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      正在秒杀
+      <span class="sec-badge live">进行中</span>
+    </h2>
+    <a>查看全部 →</a>
+  </div>
+  <div class="grid" id="gridActive"></div>
+
+  <!-- 即将开始 -->
+  <div class="section-head" style="margin-top:44px">
+    <h2>
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      即将开始
+      <span class="sec-badge soon">预告</span>
+    </h2>
+    <a>查看全部 →</a>
+  </div>
+  <div class="grid" id="gridSoon"></div>
+
+</div>
+
+<footer class="footer">
+  <span>© 2026 SeckillPro — 秒杀平台</span>
+  <span>仅供学习演示，商品数据为模拟数据</span>
+</footer>
+
+<div id="toast">
+  <span id="toastIcon"></span>
+  <span id="toastMsg"></span>
+</div>
+
+<script>
+/* ── 鼠标光晕 ── */
+const glow = document.getElementById('cursor-glow');
+document.addEventListener('mousemove', e => {
+  glow.style.left = e.clientX + 'px';
+  glow.style.top  = e.clientY + 'px';
+});
+
+/* ── 登录态检查 ── */
+const userInfo = JSON.parse(sessionStorage.getItem('userInfo') || 'null');
+if (!userInfo) window.location.href = 'index.html';
+
+(function initUser() {
+  if (!userInfo) return;
+  const name = userInfo.nickname || userInfo.phone || '用户';
+  document.getElementById('navName').textContent   = name;
+  document.getElementById('navAvatar').textContent = name.charAt(0).toUpperCase();
+})();
+
+/* ── 下拉菜单 ── */
+function toggleDropdown() {
+  document.getElementById('userDropdown').classList.toggle('open');
+}
+
+document.addEventListener('click', e => {
+  if (!document.getElementById('navUser').contains(e.target))
+    document.getElementById('userDropdown').classList.remove('open');
+});
+
+function logout() {
+  sessionStorage.removeItem('userInfo');
+  window.location.href = 'index.html';
+}
+
+/* ── Toast ── */
+let toastTimer;
+function showToast(msg, icon) {
+  clearTimeout(toastTimer);
+  document.getElementById('toastMsg').textContent = msg;
+  document.getElementById('toastIcon').textContent = icon || '';
+  const el = document.getElementById('toast');
+  el.classList.add('show');
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+/* ── Ripple ── */
+function addRipple(btn, e) {
+  const rect = btn.getBoundingClientRect();
+  const rpl  = document.createElement('span');
+  rpl.className = 'ripple';
+  const size = Math.max(rect.width, rect.height);
+  rpl.style.cssText = `width:${size}px;height:${size}px;left:${e.clientX-rect.left-size/2}px;top:${e.clientY-rect.top-size/2}px`;
+  btn.appendChild(rpl);
+  setTimeout(() => rpl.remove(), 580);
+}
+
+/* ── Hero 倒计时（金色脉冲） ── */
+(function heroCountdown() {
+  const now   = new Date();
+  const slots = [10, 14, 20];
+  let next    = null;
+  for (const h of slots) {
+    const t = new Date(now); t.setHours(h, 0, 0, 0);
+    if (t > now) { next = t; break; }
+  }
+  if (!next) {
+    next = new Date(now);
+    next.setDate(next.getDate() + 1);
+    next.setHours(10, 0, 0, 0);
+  }
+
+  let prevS = -1;
+  function tick() {
+    const diff = Math.max(0, Math.floor((next - new Date()) / 1000));
+    const h = Math.floor(diff / 3600);
+    const m = Math.floor((diff % 3600) / 60);
+    const s = diff % 60;
+    const thEl = document.getElementById('th');
+    const tmEl = document.getElementById('tm');
+    const tsEl = document.getElementById('ts');
+    thEl.textContent = String(h).padStart(2,'0');
+    tmEl.textContent = String(m).padStart(2,'0');
+    tsEl.textContent = String(s).padStart(2,'0');
+    if (s !== prevS) {
+      tsEl.classList.remove('pulse');
+      void tsEl.offsetWidth;
+      tsEl.classList.add('pulse');
+      prevS = s;
+    }
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
+
+/* ── 商品数据 ── */
+const activeProducts = [
+  { id:1, name:'Nintendo Switch OLED', imageUrl:'https://placehold.co/400x300/0a0f1a/00D4FF?text=Switch+OLED', priceNow:1799, priceOld:2999, off:'40%', sold:82, total:100, timer:12*60+35, totalTime:30*60, tag:'hot' },
+  { id:2, name:'Sony WH-1000XM5',      imageUrl:'https://placehold.co/400x300/0a0f1a/a78bfa?text=WH-1000XM5', priceNow:899,  priceOld:2499, off:'64%', sold:67, total:80,  timer:8*60+20,  totalTime:30*60, tag:'hot' },
+  { id:3, name:'戴森 V15 吸尘器',       imageUrl:'https://placehold.co/400x300/0a0f1a/00E5A0?text=Dyson+V15', priceNow:2199, priceOld:4990, off:'56%', sold:45, total:60,  timer:5*60+10,  totalTime:30*60, tag:null  },
+  { id:4, name:'iPad Air 6',            imageUrl:'https://placehold.co/400x300/0a0f1a/7C3AED?text=iPad+Air', priceNow:3999, priceOld:5999, off:'33%', sold:28, total:50,  timer:2*60+45,  totalTime:30*60, tag:'new' },
+  { id:5, name:'MacBook Air M4',        imageUrl:'https://placehold.co/400x300/0a0f1a/FFB800?text=MacBook+Air', priceNow:6499, priceOld:9999, off:'35%', sold:19, total:30,  timer:45,        totalTime:30*60, tag:null  },
+  { id:6, name:'小米 15 Ultra',          imageUrl:'https://placehold.co/400x300/0a0f1a/00D4FF?text=Mi+15+Ultra', priceNow:4299, priceOld:5999, off:'28%', sold:55, total:80,  timer:15,        totalTime:30*60, tag:'hot' },
+];
+
+const soonProducts = [
+  { id:7,  name:'AirPods Pro 3',      imageUrl:'https://placehold.co/400x300/0a0f1a/00D4FF?text=AirPods+Pro', priceNow:1299, priceOld:1899, off:'32%', timer:2*3600+15*60, tag:'soon' },
+  { id:8,  name:'DJI Osmo Pocket 4', imageUrl:'https://placehold.co/400x300/0a0f1a/00E5A0?text=DJI+Osmo', priceNow:2199, priceOld:3299, off:'33%', timer:2*3600+15*60, tag:'soon' },
+  { id:9,  name:'Kindle Scribe Pro',  imageUrl:'https://placehold.co/400x300/0a0f1a/7C3AED?text=Kindle', priceNow:799,  priceOld:1299, off:'38%', timer:2*3600+15*60, tag:'soon' },
+  { id:10, name:'华为 Mate 70 Pro',   imageUrl:'https://placehold.co/400x300/0a0f1a/FFB800?text=Mate+70+Pro', priceNow:5299, priceOld:7999, off:'34%', timer:2*3600+15*60, tag:'soon' },
+];
+
+function fmt2(n) { return String(n).padStart(2,'0'); }
+function fmt3(s) {
+  const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
+  return `${fmt2(h)}:${fmt2(m)}:${fmt2(sec)}`;
+}
+
+/* ── 渲染卡片 ── */
+function renderCard(p, isActive) {
+  const pct = isActive ? Math.round((p.sold / p.total) * 100) : 0;
+  const isUrgent = isActive && pct >= 70;
+
+  const tagMap = { hot: '热卖', new: '新品', soon: '预告' };
+  const tagHtml = p.tag
+    ? `<div class="card-tag ${p.tag}">${tagMap[p.tag]}</div>` : '';
+
+  const progressHtml = isActive ? `
+    <div class="card-progress">
+      <div class="progress-track">
+        <div class="progress-fill ${isUrgent ? 'urgent' : 'normal'}" style="width:${pct}%"></div>
+      </div>
+      <div class="progress-meta">
+        <span>已抢 ${pct}%</span>
+        <span class="${isUrgent ? 'urgent-text' : ''}">剩余 ${p.total - p.sold} 件${isUrgent ? ' ⚠' : ''}</span>
+      </div>
+    </div>` : '';
+
+  const btnClass = isActive ? '' : 'disabled';
+  const btnText  = isActive ? '立即抢购' : '即将开抢';
+
+  const div = document.createElement('div');
+  div.className = 'card';
+  if (isActive) {
+    div.classList.add('urgency-safe');
+    div.dataset.totalTime = p.totalTime || p.timer;
+  }
+  div.innerHTML = `
+    <div class="card-shine"></div>
+    <div class="card-inner">
+      ${tagHtml}
+      <div class="card-img"><img src="${p.imageUrl}" alt="${p.name}" class="card-img-real" /></div>
+      ${progressHtml}
+      <div class="card-body">
+        <div class="card-name">${p.name}</div>
+        <div class="card-price">
+          <span class="price-now">¥${p.priceNow.toLocaleString()}</span>
+          <span class="price-old">¥${p.priceOld.toLocaleString()}</span>
+          <span class="price-off">-${p.off}</span>
+        </div>
+        <div class="card-timer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          距结束 <span class="t" data-sec="${p.timer}">${fmt3(p.timer)}</span>
+        </div>
+        <button class="card-btn ${btnClass}" data-id="${p.id}">${btnText}</button>
+      </div>
+    </div>`;
+
+  /* 3D 倾斜交互 */
+  div.addEventListener('mousemove', function (e) {
+    const rect   = this.getBoundingClientRect();
+    const cx     = rect.left + rect.width / 2;
+    const cy     = rect.top  + rect.height / 2;
+    const dx     = (e.clientX - cx) / (rect.width / 2);
+    const dy     = (e.clientY - cy) / (rect.height / 2);
+    const rx     = -dy * 7;
+    const ry     = dx * 7;
+    this.style.transform = `perspective(800px) rotateX(${rx}deg) rotateY(${ry}deg) translateZ(4px)`;
+
+    /* 高光跟随 */
+    const shine = this.querySelector('.card-shine');
+    const px = ((e.clientX - rect.left) / rect.width)  * 100;
+    const py = ((e.clientY - rect.top)  / rect.height) * 100;
+    shine.style.background = `radial-gradient(circle at ${px}% ${py}%, rgba(0,212,255,0.1), transparent 55%)`;
+  });
+
+  div.addEventListener('mouseleave', function () {
+    this.style.transform = '';
+    this.style.transition = 'transform 0.45s cubic-bezier(.4,0,.2,1), box-shadow 0.3s, border-color 0.3s';
+    setTimeout(() => { this.style.transition = ''; }, 450);
+  });
+
+  /* 抢购 */
+  if (isActive) {
+    const btn = div.querySelector('.card-btn');
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      addRipple(this, e);
+      showToast(`已加入抢购队列：${p.name}`, '⚡');
+    });
+  }
+
+  return div;
+}
+
+function render() {
+  const ga = document.getElementById('gridActive');
+  const gs = document.getElementById('gridSoon');
+  activeProducts.forEach(p => ga.appendChild(renderCard(p, true)));
+  soonProducts.forEach(p  => gs.appendChild(renderCard(p, false)));
+}
+
+render();
+
+/* ── 卡片倒计时 ── */
+function updateUrgency(card, remaining, totalTime) {
+  const elapsedRatio = 1 - (remaining / totalTime);
+  const tEl = card.querySelector('.t');
+  const levels = ['urgency-safe', 'urgency-warning', 'urgency-danger', 'urgency-critical'];
+  card.classList.remove(...levels);
+  if (tEl) tEl.classList.remove('urgency-warning', 'urgency-danger', 'urgency-critical');
+
+  if (remaining <= 0 || elapsedRatio > 0.95) {
+    card.classList.add('urgency-critical');
+    if (tEl) tEl.classList.add('urgency-critical');
+  } else if (elapsedRatio > 0.8) {
+    card.classList.add('urgency-danger');
+    if (tEl) tEl.classList.add('urgency-danger');
+  } else if (elapsedRatio > 0.5) {
+    card.classList.add('urgency-warning');
+    if (tEl) tEl.classList.add('urgency-warning');
+  } else {
+    card.classList.add('urgency-safe');
+  }
+}
+
+setInterval(() => {
+  document.querySelectorAll('.card-timer .t').forEach(el => {
+    let s = parseInt(el.dataset.sec, 10);
+    if (s > 0) { s--; el.dataset.sec = String(s); }
+    el.textContent = fmt3(s);
+
+    const card = el.closest('.card');
+    if (card && card.dataset.totalTime) {
+      updateUrgency(card, s, parseInt(card.dataset.totalTime));
+    }
+  });
+}, 1000);
+
+/* ── Nav Tab ── */
+document.querySelectorAll('.nav-tab').forEach(btn => {
+  btn.addEventListener('click', function () {
+    document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
