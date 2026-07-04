@@ -1,0 +1,1012 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Seckill API",
+    "description": "秒杀系统接口。导入 Apifox 后先调用登录接口，把返回的 data.token 设置到环境变量 token，再测试需要登录的接口。",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8028",
+      "description": "本地开发环境"
+    }
+  ],
+  "tags": [
+    {
+      "name": "用户"
+    },
+    {
+      "name": "商品"
+    },
+    {
+      "name": "秒杀"
+    },
+    {
+      "name": "订单"
+    },
+    {
+      "name": "缓存"
+    },
+    {
+      "name": "监控"
+    }
+  ],
+  "paths": {
+    "/api/user/register": {
+      "post": {
+        "tags": [
+          "用户"
+        ],
+        "summary": "用户注册",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserRegisterDTO"
+              },
+              "example": {
+                "phone": "13800000001",
+                "password": "123456"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "注册成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoidResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/user/login": {
+      "post": {
+        "tags": [
+          "用户"
+        ],
+        "summary": "用户登录",
+        "description": "登录成功后返回 data.token。需要登录的接口直接把 token 原样放入 Authorization 请求头，不需要 Bearer 前缀。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserLoginDTO"
+              },
+              "example": {
+                "phone": "13800000001",
+                "password": "123456"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "登录成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserLoginResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/user/recharge": {
+      "post": {
+        "tags": [
+          "用户"
+        ],
+        "summary": "用户充值",
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserRechargeDTO"
+              },
+              "example": {
+                "amount": 1000
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "充值成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoidResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/goods/list": {
+      "get": {
+        "tags": [
+          "商品"
+        ],
+        "summary": "商品列表",
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "asc"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "商品列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoodsListResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/goods/{id}": {
+      "get": {
+        "tags": [
+          "商品"
+        ],
+        "summary": "商品详情",
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "商品详情",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoodsResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/seckill": {
+      "post": {
+        "tags": [
+          "秒杀"
+        ],
+        "summary": "创建秒杀活动",
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SeckillCreateDTO"
+              },
+              "example": {
+                "goodsId": 1,
+                "seckillPrice": 99.9,
+                "stockCount": 10,
+                "startTime": "2026-07-01T16:00:00",
+                "endTime": "2026-07-01T18:00:00"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "创建成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeckillResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/seckill/{id}": {
+      "get": {
+        "tags": [
+          "秒杀"
+        ],
+        "summary": "秒杀活动详情",
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "秒杀活动详情",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeckillResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/seckill/list/in-progress": {
+      "get": {
+        "tags": [
+          "秒杀"
+        ],
+        "summary": "进行中的秒杀活动列表",
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "进行中的秒杀活动列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeckillListResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/seckill/{id}/preheat": {
+      "post": {
+        "tags": [
+          "秒杀"
+        ],
+        "summary": "预热秒杀库存到 Redis",
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "预热成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoidResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/seckill/{id}/doSeckill": {
+      "post": {
+        "tags": [
+          "秒杀"
+        ],
+        "summary": "执行秒杀",
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "提交秒杀订单成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StringResult"
+                },
+                "example": {
+                  "code": "00000",
+                  "msg": "ok",
+                  "data": "SUCCESS_SUBMIT_ORDER"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/order/list": {
+      "get": {
+        "tags": [
+          "订单"
+        ],
+        "summary": "我的订单列表",
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "订单列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderListResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/order/{orderId}": {
+      "get": {
+        "tags": [
+          "订单"
+        ],
+        "summary": "订单详情",
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "订单详情",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/order/pay/{orderId}": {
+      "post": {
+        "tags": [
+          "订单"
+        ],
+        "summary": "支付订单",
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "支付成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoidResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/order/cancel/{orderId}": {
+      "post": {
+        "tags": [
+          "订单"
+        ],
+        "summary": "取消订单",
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "取消成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoidResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cache/stats": {
+      "get": {
+        "tags": [
+          "缓存"
+        ],
+        "summary": "缓存统计",
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "缓存统计",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CacheStatsResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/actuator/health": {
+      "get": {
+        "tags": [
+          "监控"
+        ],
+        "summary": "健康检查",
+        "responses": {
+          "200": {
+            "description": "应用健康状态"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "Authorization": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization"
+      }
+    },
+    "schemas": {
+      "UserRegisterDTO": {
+        "type": "object",
+        "required": [
+          "phone",
+          "password"
+        ],
+        "properties": {
+          "phone": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        }
+      },
+      "UserLoginDTO": {
+        "type": "object",
+        "required": [
+          "phone",
+          "password"
+        ],
+        "properties": {
+          "phone": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        }
+      },
+      "UserRechargeDTO": {
+        "type": "object",
+        "required": [
+          "amount"
+        ],
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "后端实际使用 UserContext 中的登录用户 ID，该字段可不传。"
+          },
+          "amount": {
+            "type": "number",
+            "format": "decimal"
+          }
+        }
+      },
+      "SeckillCreateDTO": {
+        "type": "object",
+        "required": [
+          "goodsId",
+          "seckillPrice",
+          "stockCount",
+          "startTime",
+          "endTime"
+        ],
+        "properties": {
+          "goodsId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "seckillPrice": {
+            "type": "number",
+            "format": "decimal"
+          },
+          "stockCount": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "startTime": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-07-01T16:00:00"
+          },
+          "endTime": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-07-01T18:00:00"
+          }
+        }
+      },
+      "UserLoginVO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "nickname": {
+            "type": "string"
+          },
+          "avatar": {
+            "type": "string"
+          },
+          "token": {
+            "type": "string"
+          },
+          "balance": {
+            "type": "number",
+            "format": "decimal"
+          }
+        }
+      },
+      "GoodsVO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number",
+            "format": "decimal"
+          },
+          "stock": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "integer"
+          }
+        }
+      },
+      "SeckillVO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "goodsId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "seckillPrice": {
+            "type": "number",
+            "format": "decimal"
+          },
+          "stockCount": {
+            "type": "integer"
+          },
+          "startTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "statusDesc": {
+            "type": "string"
+          }
+        }
+      },
+      "OrderVO": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "goodsId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "seckillId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "goodsName": {
+            "type": "string"
+          },
+          "goodsPrice": {
+            "type": "number",
+            "format": "decimal"
+          },
+          "goodsCount": {
+            "type": "integer"
+          },
+          "orderAmount": {
+            "type": "number",
+            "format": "decimal"
+          },
+          "status": {
+            "type": "integer",
+            "description": "0 待支付，1 已支付，2 已取消"
+          },
+          "statusDesc": {
+            "type": "string"
+          },
+          "payTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createTime": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CacheStatsVO": {
+        "type": "object",
+        "properties": {
+          "bloomReject": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "caffeineHit": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "caffeineMiss": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "caffeineHitRate": {
+            "type": "number",
+            "format": "double"
+          },
+          "caffeineEviction": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "redisHit": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "redisMiss": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "redisHitRate": {
+            "type": "number",
+            "format": "double"
+          },
+          "dbQuery": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cacheInvalidationPublished": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cacheInvalidationReceived": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "VoidResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "00000"
+          },
+          "msg": {
+            "type": "string",
+            "example": "ok"
+          },
+          "data": {
+            "nullable": true
+          }
+        }
+      },
+      "StringResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "00000"
+          },
+          "msg": {
+            "type": "string",
+            "example": "ok"
+          },
+          "data": {
+            "type": "string"
+          }
+        }
+      },
+      "UserLoginResult": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/VoidResult"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/UserLoginVO"
+              }
+            }
+          }
+        ]
+      },
+      "GoodsResult": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/VoidResult"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/GoodsVO"
+              }
+            }
+          }
+        ]
+      },
+      "GoodsListResult": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/VoidResult"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/GoodsVO"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "SeckillResult": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/VoidResult"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/SeckillVO"
+              }
+            }
+          }
+        ]
+      },
+      "SeckillListResult": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/VoidResult"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SeckillVO"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "OrderResult": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/VoidResult"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/OrderVO"
+              }
+            }
+          }
+        ]
+      },
+      "OrderListResult": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/VoidResult"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/OrderVO"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "CacheStatsResult": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/VoidResult"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/CacheStatsVO"
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

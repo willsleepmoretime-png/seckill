@@ -31,3 +31,18 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# 忽略压测数据和工具
+*.jmx
+*.csv
+
+# 忽略个人笔记
+面试要点.md
+
+# 忽略临时脚本
+scripts/
+
+# 忽略常见的 IDE 配置和编译产物
+.idea/
+target/
+*.iml

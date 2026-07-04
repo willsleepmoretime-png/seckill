@@ -1,22 +1,12 @@
 package com.seckill.user.application.service;
 
-import com.seckill.common.exception.BusinessException;
-import com.seckill.common.result.ResultCode;
-import com.seckill.user.domain.constant.UserStatusEnum;
-import com.seckill.user.domain.entity.User;
-import com.seckill.user.domain.repository.UserRepository;
-import org.springframework.stereotype.Service;
 
-import java.util.Optional;
+import com.seckill.user.interfaces.vo.UserLoginVO;
 
-@Service
-public class UserService {
+import java.math.BigDecimal;
 
-    private final UserRepository userRepository;
+public interface UserService {
 
-    public UserService(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
 
     /**
      * 用户注册
@@ -25,19 +15,7 @@ public class UserService {
      * 2. 创建新 User(M1 简化:salt = "", nickname = "新用户", avatar = null, status = NORMAL)
      * 3. 调 userRepository.save 持久化
      */
-    public void register(String phone, String password) {
-        // 1. 查重:已存在则抛异常
-        Optional<User> opt = userRepository.findByPhone(phone);
-        if (opt.isPresent()) {
-            throw new BusinessException(ResultCode.PHONE_ALREADY_REGISTERED);
-        }
-
-        // 2. 创建新用户
-        User user = new User(phone, password, "", "新用户", null, UserStatusEnum.NORMAL);
-
-        // 3. 持久化
-        userRepository.save(user);
-    }
+    void register(String phone, String password);
 
     /**
      * 用户登录
@@ -47,15 +25,7 @@ public class UserService {
      * 3. 检查用户状态 → 禁用抛 USER_DISABLED
      * 4. 返回 User
      */
-    public User login(String phone, String password) {
-        User user =userRepository.findByPhone(phone).orElseThrow(()-> new BusinessException(ResultCode.USER_NOT_FOUND));
-        if(!password.equals(user.getPassword())){
-            throw new BusinessException(ResultCode.PASSWORD_INCORRECT);
-        }
-        if(user.getStatus()!=UserStatusEnum.NORMAL){
-            throw new BusinessException(ResultCode.USER_DISABLED);
-        }
+     UserLoginVO login(String phone, String password);
 
-        return user;
-    }
+     Boolean recharge(Long userId, BigDecimal amount);
 }

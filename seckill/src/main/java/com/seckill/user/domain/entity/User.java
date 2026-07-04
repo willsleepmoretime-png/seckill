@@ -2,10 +2,14 @@ package com.seckill.user.domain.entity;
 
 
 import com.seckill.common.entity.BaseEntity;
+import com.seckill.common.exception.BusinessException;
+import com.seckill.common.result.ResultCode;
 import com.seckill.user.domain.constant.UserStatusEnum;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.math.BigDecimal;
 
 @NoArgsConstructor
 @Getter
@@ -15,6 +19,7 @@ public class User extends BaseEntity {
     private String password;
     private String salt;
 
+    private BigDecimal balance;
     @Setter
     private String nickname;
     @Setter
@@ -22,17 +27,29 @@ public class User extends BaseEntity {
 
     private UserStatusEnum status;
 
-    public User(String phone, String password, String salt,
-                String nickname, String avatar, UserStatusEnum status) {
-        this.phone = phone;
-        this.password = password;
-        this.salt = salt;
-        this.nickname = nickname;
-        this.avatar = avatar;
-        this.status = status;
+    public static User create(String phone, String encryptedPassword, String salt,
+                              String nickname, String avatar, UserStatusEnum status) {
+        // 1. 入参校验
+        if (phone == null || encryptedPassword == null  || status == null) {
+            throw new BusinessException(ResultCode.PARAM_ERROR);
+        }
+
+        // 2. 创建对象 + 填字段(类内部可直接访问 private)
+        User user = new User();
+        user.phone = phone;
+        user.password = encryptedPassword;
+        user.salt = salt == null ? "" : salt;
+        user.nickname = nickname;
+        user.avatar = avatar;
+        user.status = status;
+        return user;
     }
 
-    public void changePassword(String oldRawPassword, String newRawPassword) {
-        throw new UnsupportedOperationException("M3 实现");
+    public void changePassword(String newEncryptedPassword) {
+        if (newEncryptedPassword == null) {
+            throw new BusinessException(ResultCode.PARAM_ERROR);
+        }
+        this.password = newEncryptedPassword;
+
     }
 }

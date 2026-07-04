@@ -35,7 +35,7 @@ public class GoodsRepositoryImpl implements GoodsRepository {
     public List<Goods> findAllOnSale(SortOrder opt) {
         LambdaQueryWrapper<Goods> wrapper = new LambdaQueryWrapper<Goods>()
                 .eq(Goods::getStatus, GoodsStatusEnum.ON_SALE)
-                .orderBy(true,opt == SortOrder.ASC, Goods::getPrice);
+                .orderBy(true,opt == SortOrder.DESC, Goods::getPrice);
         return goodsMapper.selectList(wrapper);
     }
 

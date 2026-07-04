@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>个人中心 — SeckillPro</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #FFF8F0;
+      --card-bg:   #FFFFFF;
+      --text:      #3D2E1F;
+      --muted:     #9B8573;
+      --coral:     #FF6B5B;
+      --coral-dim: rgba(255,107,91,0.1);
+      --gold:      #D4914A;
+      --gold-light:#E8A850;
+      --gold-dim:  rgba(212,145,74,0.1);
+      --gold-glow: rgba(212,145,74,0.15);
+      --green:     #6BA587;
+      --green-dim: rgba(107,165,135,0.08);
+      --red:       #E04545;
+      --red-dim:   rgba(224,69,69,0.08);
+      --surface:   rgba(0,0,0,0.02);
+      --border:    rgba(0,0,0,0.06);
+      --border-h:  rgba(0,0,0,0.12);
+      --input-bg:  rgba(0,0,0,0.02);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .bg-base {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 20%, rgba(255,180,130,0.10) 0%, transparent 50%),
+        radial-gradient(ellipse 60% 80% at 80% 70%, rgba(255,150,100,0.08) 0%, transparent 50%);
+    }
+
+    #cursor-warm {
+      position: fixed;
+      width: 500px; height: 500px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,150,100,0.06) 0%, rgba(255,180,140,0.02) 40%, transparent 65%);
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      transition: left 0.15s ease, top 0.15s ease;
+      z-index: 1;
+    }
+
+    /* Nav */
+    .nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(255,248,240,0.88);
+      backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--border);
+      height: 60px; display: flex; align-items: center; padding: 0 36px; gap: 16px;
+    }
+    .nav-brand {
+      font-size: 1rem; font-weight: 700; letter-spacing: 1.2px;
+      color: var(--gold); display: flex; align-items: center; gap: 8px; cursor: pointer;
+    }
+    .nav-brand .dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--coral); box-shadow: 0 0 8px rgba(255,107,91,0.3);
+      animation: breathe 2.5s ease-in-out infinite;
+    }
+    @keyframes breathe {
+      0%, 100% { box-shadow: 0 0 6px rgba(255,107,91,0.3); }
+      50% { box-shadow: 0 0 16px rgba(255,107,91,0.55); }
+    }
+    .nav-links { display: flex; gap: 2px; margin-left: 24px; }
+    .nav-link {
+      padding: 6px 14px; border-radius: 7px; font-size: 0.84rem; font-weight: 500;
+      color: var(--muted); cursor: pointer; transition: all 0.2s;
+      background: none; border: none; font-family: inherit; text-decoration: none;
+      display: inline-flex; align-items: center;
+    }
+    .nav-link:hover { color: var(--text); background: rgba(0,0,0,0.03); }
+    .nav-link.on { color: var(--coral); background: var(--coral-dim); }
+
+    .nav-right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+    .nav-user {
+      display: flex; align-items: center; gap: 8px; padding: 4px 12px 4px 5px;
+      border-radius: 10px; background: var(--surface); border: 1px solid var(--border);
+      cursor: pointer; transition: all 0.2s; position: relative;
+    }
+    .nav-user:hover { border-color: var(--border-h); background: rgba(0,0,0,0.03); }
+    .nav-avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--coral), #e55a4a);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.78rem; font-weight: 700; color: #fff;
+    }
+    .nav-name { font-size: 0.84rem; font-weight: 500; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dropdown {
+      position: absolute; top: calc(100% + 8px); right: 0;
+      background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px;
+      padding: 4px; min-width: 140px; display: none; z-index: 200;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.1);
+    }
+    .dropdown.show { display: block; animation: fadeIn 0.15s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+    .dropdown a {
+      display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 6px;
+      font-size: 0.83rem; color: var(--muted); cursor: pointer; text-decoration: none;
+      transition: all 0.15s;
+    }
+    .dropdown a:hover { background: var(--coral-dim); color: var(--coral); }
+    .dropdown a.quit:hover { background: var(--red-dim); color: var(--red); }
+
+    /* Main */
+    .main { position: relative; z-index: 1; padding: 0 36px 80px; max-width: 780px; margin: 0 auto; }
+
+    .page-title {
+      margin: 36px 0 24px;
+      font-size: 1.4rem; font-weight: 700;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .page-title .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--coral); box-shadow: 0 0 10px rgba(255,107,91,0.25);
+    }
+
+    /* Cards grid */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px; padding: 24px;
+      transition: border-color 0.3s;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    }
+    .card:hover { border-color: var(--border-h); }
+
+    .card-label {
+      font-size: 0.72rem; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+
+    /* User info card */
+    .user-card {
+      display: flex; flex-direction: column; align-items: center; text-align: center;
+    }
+    .user-avatar-lg {
+      width: 64px; height: 64px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--coral), #e55a4a);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.6rem; font-weight: 700; color: #fff;
+      margin-bottom: 12px; box-shadow: 0 0 24px rgba(255,107,91,0.15);
+    }
+    .user-nickname { font-size: 1.1rem; font-weight: 700; margin-bottom: 4px; }
+    .user-phone { font-size: 0.84rem; color: var(--muted); }
+
+    /* Balance card */
+    .balance-card { display: flex; flex-direction: column; }
+    .balance-amount {
+      font-size: 2.2rem; font-weight: 800; color: var(--coral);
+      margin-bottom: 4px; font-variant-numeric: tabular-nums;
+    }
+    .balance-amount .unit { font-size: 1rem; font-weight: 600; margin-right: 4px; }
+    .balance-sub {
+      font-size: 0.78rem; color: var(--muted); margin-bottom: 18px;
+    }
+    .btn-recharge {
+      align-self: flex-start;
+      padding: 9px 22px; border-radius: 8px; font-size: 0.84rem; font-weight: 600;
+      font-family: inherit; cursor: pointer; transition: all 0.2s;
+      background: linear-gradient(135deg, rgba(255,107,91,0.15), rgba(255,142,83,0.08));
+      border: 1px solid rgba(255,107,91,0.3); color: var(--coral);
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-recharge:hover {
+      background: linear-gradient(135deg, rgba(255,107,91,0.25), rgba(255,142,83,0.16));
+      border-color: var(--coral); box-shadow: 0 0 14px rgba(255,107,91,0.15);
+    }
+
+    /* Quick links */
+    .quick-links {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+    }
+    .quick-link {
+      display: flex; align-items: center; gap: 12px;
+      padding: 18px 20px; border-radius: 12px;
+      background: var(--card-bg); border: 1px solid var(--border);
+      cursor: pointer; transition: all 0.2s; text-decoration: none; color: var(--text);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    }
+    .quick-link:hover {
+      border-color: var(--border-h);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    }
+    .quick-link-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; flex-shrink: 0;
+    }
+    .quick-link-icon.orders {
+      background: var(--coral-dim); border: 1px solid rgba(255,107,91,0.15);
+    }
+    .quick-link-icon.home {
+      background: var(--gold-dim); border: 1px solid rgba(212,145,74,0.15);
+    }
+    .quick-link-label { font-size: 0.9rem; font-weight: 600; }
+    .quick-link-sub { font-size: 0.74rem; color: var(--muted); margin-top: 2px; }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 300;
+      background: rgba(0,0,0,0.3); backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      animation: fadeIn 0.2s ease;
+    }
+    .modal-overlay.hidden { display: none; }
+    .modal {
+      background: var(--card-bg); border: 1px solid var(--border-h);
+      border-radius: 16px; padding: 28px 32px; min-width: 360px;
+      box-shadow: 0 24px 56px rgba(0,0,0,0.12);
+    }
+    .modal h3 {
+      font-size: 1.05rem; margin-bottom: 20px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .modal h3 .m-icon { color: var(--coral); }
+
+    .input-group { margin-bottom: 20px; }
+    .input-group label {
+      display: block; font-size: 0.74rem; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;
+    }
+    .input-wrap { position: relative; }
+    .input-wrap .prefix {
+      position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+      color: var(--coral); font-weight: 700; font-size: 0.95rem;
+    }
+    .input-wrap input {
+      width: 100%;
+      background: var(--input-bg); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px 14px 12px 30px;
+      color: var(--text); font-size: 1.1rem; font-family: inherit; outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .input-wrap input:focus {
+      border-color: var(--coral);
+      box-shadow: 0 0 0 3px var(--coral-dim), 0 0 16px var(--coral-dim);
+    }
+
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+    .btn-modal-primary {
+      padding: 9px 22px; border-radius: 8px; font-size: 0.84rem; font-weight: 600;
+      border: 1px solid rgba(255,107,91,0.3); cursor: pointer; font-family: inherit;
+      background: linear-gradient(135deg, rgba(255,107,91,0.15), rgba(255,142,83,0.08));
+      color: var(--coral); transition: all 0.2s;
+    }
+    .btn-modal-primary:hover { border-color: var(--coral); box-shadow: 0 0 14px rgba(255,107,91,0.15); }
+    .btn-modal-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-modal-secondary {
+      padding: 9px 22px; border-radius: 8px; font-size: 0.84rem; font-weight: 500;
+      background: transparent; border: 1px solid var(--border);
+      color: var(--muted); cursor: pointer; font-family: inherit;
+    }
+    .btn-modal-secondary:hover { border-color: var(--border-h); color: var(--text); }
+
+    .spinner {
+      display: inline-block; width: 14px; height: 14px;
+      border: 2px solid rgba(255,107,91,0.2);
+      border-top-color: var(--coral);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 36px; left: 50%; transform: translateX(-50%) translateY(80px);
+      background: var(--card-bg); border: 1px solid var(--border-h); border-radius: 12px;
+      padding: 12px 22px; font-size: 0.86rem; font-weight: 500;
+      box-shadow: 0 14px 36px rgba(0,0,0,0.12), 0 0 18px var(--coral-dim);
+      transition: all 0.35s cubic-bezier(.4,0,.2,1);
+      opacity: 0; z-index: 999; white-space: nowrap; display: flex; align-items: center; gap: 8px;
+    }
+    .toast.on { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+    .foot {
+      border-top: 1px solid var(--border); padding: 22px 36px;
+      display: flex; justify-content: space-between; color: var(--muted); font-size: 0.78rem;
+      position: relative; z-index: 1;
+    }
+
+    @media (max-width: 640px) {
+      .nav { padding: 0 16px; } .nav-links { gap: 0; }
+      .nav-link { padding: 6px 8px; font-size: 0.76rem; }
+      .main { padding: 0 16px 60px; }
+      .cards-grid, .quick-links { grid-template-columns: 1fr; }
+      .foot { flex-direction: column; gap: 6px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-base"></div>
+<div id="cursor-warm"></div>
+
+<nav class="nav">
+  <div class="nav-brand" onclick="window.location.href='home.html'"><span class="dot"></span>SeckillPro</div>
+  <div class="nav-links">
+    <a class="nav-link" href="home.html">秒杀大厅</a>
+    <a class="nav-link" href="admin.html">活动管理</a>
+    <a class="nav-link" href="cache-stats.html">缓存监控</a>
+    <a class="nav-link" href="orders.html">我的订单</a>
+    <a class="nav-link on">个人中心</a>
+  </div>
+  <div class="nav-right">
+    <div class="nav-user" id="navUser" onclick="toggleDropdown()">
+      <div class="nav-avatar" id="navAvatar">U</div>
+      <span class="nav-name" id="navName">用户</span>
+      <div class="dropdown" id="dropdown">
+        <a href="cache-stats.html">缓存监控</a>
+        <a href="orders.html">我的订单</a>
+        <a onclick="logout()" class="quit">退出登录</a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="main">
+  <div class="page-title"><span class="dot"></span>个人中心</div>
+
+  <div class="cards-grid">
+    <!-- User info -->
+    <div class="card user-card">
+      <div class="user-avatar-lg" id="avatarLg">U</div>
+      <div class="user-nickname" id="displayName">用户</div>
+      <div class="user-phone" id="displayPhone">—</div>
+    </div>
+
+    <!-- Balance -->
+    <div class="card balance-card">
+      <div class="card-label">账户余额</div>
+      <div class="balance-amount">
+        <span class="unit">&yen;</span><span id="balanceVal">0.00</span>
+      </div>
+      <div class="balance-sub" id="balanceSub">可用于秒杀订单支付</div>
+      <button class="btn-recharge" onclick="openRecharge()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        充值
+      </button>
+    </div>
+  </div>
+
+  <!-- Quick links -->
+  <div class="quick-links">
+    <a class="quick-link" href="orders.html">
+      <div class="quick-link-icon orders">◆</div>
+      <div>
+        <div class="quick-link-label">我的订单</div>
+        <div class="quick-link-sub">查看和管理订单</div>
+      </div>
+    </a>
+    <a class="quick-link" href="home.html">
+      <div class="quick-link-icon home">◇</div>
+      <div>
+        <div class="quick-link-label">秒杀大厅</div>
+        <div class="quick-link-sub">发现限时好物</div>
+      </div>
+    </a>
+  </div>
+</div>
+
+<footer class="foot">
+  <span>&copy; 2026 SeckillPro</span>
+  <span>仅供学习演示</span>
+</footer>
+
+<div class="toast" id="toast"><span id="toastMsg"></span></div>
+
+<!-- Recharge Modal -->
+<div class="modal-overlay hidden" id="rechargeModal">
+  <div class="modal">
+    <h3><span class="m-icon">💰</span>账户充值</h3>
+    <div class="input-group">
+      <label for="rechargeAmount">充值金额</label>
+      <div class="input-wrap">
+        <span class="prefix">&yen;</span>
+        <input type="number" id="rechargeAmount" placeholder="请输入充值金额" min="0.01" step="0.01" autofocus />
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-modal-secondary" onclick="closeRecharge()">取消</button>
+      <button class="btn-modal-primary" id="btnRechargeConfirm" onclick="doRecharge()">确认充值</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'http://localhost:8028';
+
+/* Auth check */
+const userInfo = JSON.parse(sessionStorage.getItem('userInfo') || 'null');
+if (!userInfo) window.location.href = 'index.html';
+
+/* Init display */
+(function() {
+  if (!userInfo) return;
+  const name = userInfo.nickname || userInfo.phone || '用户';
+
+  document.getElementById('navName').textContent = name;
+  document.getElementById('navAvatar').textContent = name.charAt(0).toUpperCase();
+  document.getElementById('avatarLg').textContent = name.charAt(0).toUpperCase();
+  document.getElementById('displayName').textContent = name;
+  document.getElementById('displayPhone').textContent = userInfo.phone || '—';
+
+  const bal = userInfo.balance;
+  document.getElementById('balanceVal').textContent =
+    (bal != null ? Number(bal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00');
+})();
+
+/* Cursor glow */
+const glow = document.getElementById('cursor-warm');
+document.addEventListener('mousemove', e => {
+  glow.style.left = e.clientX + 'px';
+  glow.style.top  = e.clientY + 'px';
+});
+
+/* Dropdown */
+function toggleDropdown() {
+  document.getElementById('dropdown').classList.toggle('show');
+}
+document.addEventListener('click', e => {
+  if (!document.getElementById('navUser').contains(e.target))
+    document.getElementById('dropdown').classList.remove('show');
+});
+function logout() {
+  sessionStorage.removeItem('userInfo');
+  window.location.href = 'index.html';
+}
+
+/* Toast */
+let toastT;
+function toast(msg, icon) {
+  clearTimeout(toastT);
+  document.getElementById('toastMsg').textContent = (icon || '') + ' ' + msg;
+  const el = document.getElementById('toast');
+  el.classList.add('on');
+  toastT = setTimeout(() => el.classList.remove('on'), 2600);
+}
+
+/* Recharge modal */
+function openRecharge() {
+  document.getElementById('rechargeModal').classList.remove('hidden');
+  document.getElementById('rechargeAmount').value = '';
+  document.getElementById('rechargeAmount').focus();
+}
+function closeRecharge() {
+  document.getElementById('rechargeModal').classList.add('hidden');
+}
+document.getElementById('rechargeModal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeRecharge();
+});
+
+async function doRecharge() {
+  const amount = parseFloat(document.getElementById('rechargeAmount').value);
+  if (!amount || amount <= 0) {
+    toast('请输入有效的充值金额', '');
+    return;
+  }
+
+  const btn = document.getElementById('btnRechargeConfirm');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> 充值中...';
+
+  try {
+    const res = await fetch(`${API}/api/user/recharge`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': userInfo?.token || '' },
+      body: JSON.stringify({ userId: userInfo.id, amount: amount })
+    });
+    const data = await res.json();
+    if (data.code === '00000') {
+      // 更新 sessionStorage 中的余额
+      const oldBal = parseFloat(userInfo.balance || '0');
+      userInfo.balance = (oldBal + amount).toFixed(2);
+      sessionStorage.setItem('userInfo', JSON.stringify(userInfo));
+
+      document.getElementById('balanceVal').textContent =
+        Number(userInfo.balance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      toast('充值成功！', '');
+      closeRecharge();
+    } else {
+      toast(data.msg || '充值失败', '');
+    }
+  } catch (e) {
+    toast('网络异常，请稍后重试', '');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '确认充值';
+  }
+}
+
+/* Enter key for recharge */
+document.getElementById('rechargeAmount').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doRecharge();
+});
+</script>
+</body>
+</html>

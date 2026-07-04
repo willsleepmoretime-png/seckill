@@ -8,1010 +8,849 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --cyan:       #00D4FF;
-      --cyan-dim:   rgba(0, 212, 255, 0.12);
-      --cyan-glow:  rgba(0, 212, 255, 0.3);
-      --gold:       #FFB800;
-      --gold-dim:   rgba(255, 184, 0, 0.12);
-      --purple:     #7C3AED;
-      --purple-dim: rgba(124, 58, 237, 0.15);
-      --bg:         #04050f;
-      --bg2:        #080c1a;
-      --surface:    rgba(255, 255, 255, 0.035);
-      --surface-h:  rgba(0, 212, 255, 0.06);
-      --border:     rgba(0, 212, 255, 0.1);
-      --border-h:   rgba(0, 212, 255, 0.28);
-      --text:       #E8F4FF;
-      --muted:      rgba(232, 244, 255, 0.45);
-      --green:      #00E5A0;
-      --amber:      #FFB800;
+      --bg:        #FFF8F0;
+      --bg-warm:   #FFF0E3;
+      --card-bg:   #FFFFFF;
+      --text:      #3D2E1F;
+      --muted:     #9B8573;
+      --coral:     #FF6B5B;
+      --coral-dim: rgba(255,107,91,0.1);
+      --orange:    #FF8E53;
+      --gold:      #D4914A;
+      --gold-light:#E8A850;
+      --gold-dim:  rgba(212,145,74,0.1);
+      --gold-glow: rgba(212,145,74,0.2);
+      --green:     #6BA587;
+      --green-dim: rgba(107,165,135,0.08);
+      --red:       #E04545;
+      --red-dim:   rgba(224,69,69,0.08);
+      --border:    rgba(0,0,0,0.06);
+      --border-h:  rgba(0,0,0,0.12);
+      --surface:   rgba(0,0,0,0.02);
+
+      /* tension-driven — overridden by body[data-tension] */
+      --tense-bg:       #FFF8F0;
+      --tense-overlay:  transparent;
+      --blob-speed:     30s;
+      --blob-hue:       0deg;
+      --blob-scale:     1;
+      --plant-quiver:   0px;
+      --plant-hue:      0deg;
+      --pulse-opacity:  0;
+    }
+
+    /* ── Tension: Level 1 (1-5min) ── */
+    body[data-tension="1"] {
+      --tense-bg:       #FFF2E4;
+      --tense-overlay:  rgba(255,180,120,0.06);
+      --blob-speed:     18s;
+      --blob-hue:       15deg;
+      --blob-scale:     1.05;
+      --plant-quiver:   1px;
+      --plant-hue:      10deg;
+    }
+    /* ── Tension: Level 2 (30-60s) ── */
+    body[data-tension="2"] {
+      --tense-bg:       #FFEDDC;
+      --tense-overlay:  rgba(255,130,80,0.10);
+      --blob-speed:     9s;
+      --blob-hue:       30deg;
+      --blob-scale:     1.12;
+      --plant-quiver:   3px;
+      --plant-hue:      20deg;
+      --pulse-opacity:  0.3;
+    }
+    /* ── Tension: Level 3 (<30s) ── */
+    body[data-tension="3"] {
+      --tense-bg:       #FFE8D6;
+      --tense-overlay:  rgba(255,80,50,0.14);
+      --blob-speed:     5s;
+      --blob-hue:       45deg;
+      --blob-scale:     1.2;
+      --plant-quiver:   6px;
+      --plant-hue:      35deg;
+      --pulse-opacity:  0.6;
     }
 
     html { scroll-behavior: smooth; }
 
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: var(--bg);
+      background: var(--tense-bg);
       color: var(--text);
       min-height: 100vh;
       overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      transition: background 2s ease;
+      position: relative;
     }
 
-    /* ── 鼠标光晕 ── */
-    #cursor-glow {
+    /* ════════════════ LAYER 0: 基底 ════════════════ */
+    .bg-base {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 20%, rgba(255,180,130,0.12) 0%, transparent 50%),
+        radial-gradient(ellipse 60% 80% at 80% 70%, rgba(255,150,100,0.10) 0%, transparent 50%),
+        radial-gradient(ellipse 50% 50% at 50% 50%, rgba(255,200,160,0.06) 0%, transparent 60%);
+      transition: background 2s ease;
+    }
+    .tense-overlay {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background: var(--tense-overlay);
+      transition: background 1.5s ease;
+    }
+    @keyframes bgPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: calc(1 - var(--pulse-opacity)); }
+    }
+    body[data-tension="3"] .bg-base {
+      animation: bgPulse 0.6s ease-in-out infinite;
+    }
+
+    /* ════════════════ LAYER 1: 几何形状上浮 ════════════════ */
+    .shapes { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+
+    .shape {
+      position: absolute;
+      opacity: 0.7;
+      transition: filter 1.5s ease;
+    }
+
+    /* 形状种类 */
+    .shape.sq   { border-radius: 8px; }
+    .shape.sq2  { border-radius: 18px; }
+    .shape.ci   { border-radius: 50%; }
+    .shape.tri  { clip-path: polygon(50% 0%, 0% 100%, 100% 100%); border-radius: 0; }
+    .shape.di   { clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); border-radius: 0; }
+    .shape.he   { clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); border-radius: 0; } /* 六边形 */
+
+    /* 冷色系 — 在暖白底上高对比 */
+    .shape.blue   { background: #3B82C4; }
+    .shape.teal   { background: #0D9488; }
+    .shape.green  { background: #4D8C3A; }
+    .shape.navy   { background: #4852A0; }
+    .shape.sky    { background: #3B9BC8; }
+    .shape.plum   { background: #7B4F9D; }
+    .shape.cyan   { background: #2CA0A8; }
+
+    @keyframes floatUp {
+      0%   { transform: translateY(0) rotate(0deg); }
+      100% { transform: translateY(-120vh) rotate(var(--rot)); }
+    }
+
+    /* 每个形状: 分布在整个视口, 不同速度不断上飘 */
+    .sh-1  { top: 85%; left: 3%;  width: 50px; height: 50px; animation: floatUp 14s linear infinite; animation-delay: 0s;    --rot: 25deg;  }
+    .sh-2  { top: 95%; left: 10%; width: 70px; height: 70px; animation: floatUp 20s linear infinite; animation-delay: -5s;   --rot: -40deg; }
+    .sh-3  { top: 70%; left: 18%; width: 40px; height: 40px; animation: floatUp 11s linear infinite; animation-delay: -3s;   --rot: 60deg;  }
+    .sh-4  { top: 90%; left: 24%; width: 80px; height: 80px; animation: floatUp 24s linear infinite; animation-delay: -8s;   --rot: -15deg; }
+    .sh-5  { top: 80%; left: 32%; width: 55px; height: 55px; animation: floatUp 16s linear infinite; animation-delay: -2s;   --rot: 35deg;  }
+    .sh-6  { top: 95%; left: 40%; width: 45px; height: 45px; animation: floatUp 10s linear infinite; animation-delay: -6s;   --rot: -55deg; }
+    .sh-7  { top: 75%; left: 48%; width: 65px; height: 65px; animation: floatUp 18s linear infinite; animation-delay: -1s;   --rot: 20deg;  }
+    .sh-8  { top: 90%; left: 55%; width: 50px; height: 50px; animation: floatUp 12s linear infinite; animation-delay: -9s;   --rot: -30deg; }
+    .sh-9  { top: 85%; left: 64%; width: 75px; height: 75px; animation: floatUp 22s linear infinite; animation-delay: -4s;   --rot: 45deg;  }
+    .sh-10 { top: 95%; left: 72%; width: 38px; height: 38px; animation: floatUp 9s linear infinite;  animation-delay: -7s;   --rot: -25deg; }
+    .sh-11 { top: 80%; left: 80%; width: 60px; height: 60px; animation: floatUp 17s linear infinite; animation-delay: -3s;   --rot: 55deg;  }
+    .sh-12 { top: 90%; left: 88%; width: 48px; height: 48px; animation: floatUp 13s linear infinite; animation-delay: -10s;  --rot: -35deg; }
+    .sh-13 { top: 70%; left: 94%; width: 42px; height: 42px; animation: floatUp 11s linear infinite; animation-delay: -5s;   --rot: 30deg;  }
+    .sh-14 { top: 88%; left: 14%; width: 58px; height: 58px; animation: floatUp 26s linear infinite; animation-delay: -12s;  --rot: -20deg; }
+    .sh-15 { top: 82%; left: 68%; width: 72px; height: 72px; animation: floatUp 23s linear infinite; animation-delay: -15s;  --rot: 40deg;  }
+
+    /* 紧张态: 加速 */
+    body[data-tension="2"] .shape { animation-duration: 6s !important; }
+    body[data-tension="3"] .shape { animation-duration: 3s !important; filter: hue-rotate(25deg); }
+
+    /* ════════════════ LAYER 2: 植物装饰 ════════════════ */
+    .plants { position: fixed; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
+    .plant {
+      position: absolute;
+      opacity: 0.32;
+      transition: transform 0.5s ease, filter 1.5s ease;
+      filter: hue-rotate(var(--plant-hue));
+    }
+    .plant-shake {
+      animation: plantShake 0.5s ease-in-out infinite;
+    }
+    @keyframes plantShake {
+      0%, 100% { transform: translateX(0) rotate(0deg); }
+      25% { transform: translateX(calc(var(--plant-quiver) * 1)) rotate(calc(var(--plant-quiver) * 0.05deg)); }
+      75% { transform: translateX(calc(var(--plant-quiver) * -1)) rotate(calc(var(--plant-quiver) * -0.05deg)); }
+    }
+
+    /* 左下角叶子 */
+    .plant-left {
+      bottom: -40px; left: -20px;
+      width: 280px; height: 320px;
+    }
+    /* 右下角叶子 */
+    .plant-right {
+      bottom: -30px; right: -10px;
+      width: 240px; height: 280px;
+    }
+    /* 右上角小枝 */
+    .plant-top {
+      top: -20px; right: 5%;
+      width: 160px; height: 180px;
+      opacity: 0.18;
+    }
+
+    /* ════════════════ 鼠标暖光 ════════════════ */
+    #cursor-warm {
       position: fixed;
-      width: 420px;
-      height: 420px;
-      border-radius: 50%;
-      background: radial-gradient(circle,
-        rgba(0,212,255,0.06) 0%,
-        rgba(124,58,237,0.03) 45%,
-        transparent 70%);
+      width: 500px; height: 500px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,150,100,0.06) 0%, rgba(255,180,140,0.02) 40%, transparent 65%);
       pointer-events: none;
       transform: translate(-50%, -50%);
-      transition: left 0.1s ease, top 0.1s ease;
-      z-index: 0;
+      transition: left 0.15s ease, top 0.15s ease;
+      z-index: 1;
     }
 
-    /* ── Navbar ── */
-    .navbar {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      background: rgba(4, 5, 15, 0.88);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+    /* ════════════════ Nav ════════════════ */
+    .nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(255,248,240,0.88);
+      backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
       border-bottom: 1px solid var(--border);
-      height: 64px;
-      display: flex;
-      align-items: center;
-      padding: 0 40px;
-      gap: 20px;
+      height: 60px; display: flex; align-items: center; padding: 0 36px; gap: 16px;
+      transition: background 2s ease, border-color 2s ease;
     }
-
-    .nav-logo {
-      font-size: 1.1rem;
-      font-weight: 800;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      color: var(--cyan);
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      filter: drop-shadow(0 0 10px rgba(0,212,255,0.4));
+    .nav-brand {
+      font-size: 1rem; font-weight: 700; letter-spacing: 1.2px;
+      color: var(--gold); display: flex; align-items: center; gap: 8px;
     }
-
-    .nav-logo svg { width: 18px; height: 18px; fill: var(--cyan); }
-
-    .nav-tabs { display: flex; gap: 2px; margin-left: 20px; }
-
-    .nav-tab {
-      padding: 7px 15px;
-      border-radius: 8px;
-      font-size: 0.86rem;
-      font-weight: 500;
-      color: var(--muted);
-      cursor: pointer;
-      transition: background 0.2s, color 0.2s;
-      background: none;
-      border: none;
-      font-family: inherit;
+    .nav-brand .dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--coral); box-shadow: 0 0 8px rgba(255,107,91,0.3);
+      animation: breathe 2.5s ease-in-out infinite;
     }
-
-    .nav-tab:hover { background: var(--surface-h); color: var(--text); }
-    .nav-tab.active { background: var(--cyan-dim); color: var(--cyan); border: 1px solid rgba(0,212,255,0.18); }
-
-    .nav-spacer { flex: 1; }
-
-    .nav-search {
-      display: flex;
-      align-items: center;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 0 13px;
-      gap: 8px;
-      height: 36px;
-      transition: border-color 0.2s, box-shadow 0.2s;
+    @keyframes breathe {
+      0%, 100% { box-shadow: 0 0 6px rgba(255,107,91,0.3); }
+      50% { box-shadow: 0 0 16px rgba(255,107,91,0.55); }
     }
-
-    .nav-search:focus-within {
-      border-color: var(--cyan);
-      box-shadow: 0 0 0 3px rgba(0,212,255,0.08), 0 0 14px rgba(0,212,255,0.06);
+    .nav-links { display: flex; gap: 2px; margin-left: 24px; }
+    .nav-link {
+      padding: 6px 14px; border-radius: 7px; font-size: 0.84rem; font-weight: 500;
+      color: var(--muted); cursor: pointer; transition: all 0.2s;
+      background: none; border: none; font-family: inherit;
     }
-
-    .nav-search input {
-      background: none; border: none; outline: none;
-      color: var(--text); font-size: 0.86rem; font-family: inherit; width: 175px;
-    }
-
-    .nav-search input::placeholder { color: var(--muted); }
-
-    .nav-search svg { color: var(--muted); width: 15px; height: 15px; flex-shrink: 0; }
-
+    .nav-link:hover { color: var(--text); background: rgba(0,0,0,0.03); }
+    .nav-link.on { color: var(--coral); background: var(--coral-dim); }
+    .nav-right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
     .nav-user {
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      padding: 5px 13px 5px 7px;
-      border-radius: 12px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      cursor: pointer;
-      transition: background 0.2s, border-color 0.2s;
-      position: relative;
+      display: flex; align-items: center; gap: 8px; padding: 4px 12px 4px 5px;
+      border-radius: 10px; background: var(--surface); border: 1px solid var(--border);
+      cursor: pointer; transition: all 0.2s; position: relative;
     }
-
-    .nav-user:hover { background: var(--surface-h); border-color: var(--border-h); }
-
+    .nav-user:hover { border-color: var(--border-h); background: rgba(0,0,0,0.03); }
     .nav-avatar {
-      width: 30px; height: 30px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--cyan), #0099bb);
+      width: 28px; height: 28px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--coral), var(--orange));
       display: flex; align-items: center; justify-content: center;
-      font-size: 0.82rem; font-weight: 700; flex-shrink: 0;
-      color: #000;
-      box-shadow: 0 0 12px rgba(0,212,255,0.3);
+      font-size: 0.78rem; font-weight: 700; color: #fff;
     }
-
-    .nav-name { font-size: 0.86rem; font-weight: 600; max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-    .nav-chevron { color: var(--muted); font-size: 0.7rem; }
-
-    /* 下拉菜单 */
-    .user-dropdown {
-      position: absolute;
-      top: calc(100% + 10px);
-      right: 0;
-      background: #0d1020;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 6px;
-      min-width: 155px;
-      box-shadow: 0 20px 50px rgba(0,0,0,0.6), 0 0 20px rgba(0,212,255,0.04);
-      display: none;
-      z-index: 200;
-      animation: dropIn 0.18s ease;
+    .nav-name { font-size: 0.84rem; font-weight: 500; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dropdown {
+      position: absolute; top: calc(100% + 8px); right: 0;
+      background: #fff; border: 1px solid var(--border); border-radius: 10px;
+      padding: 4px; min-width: 140px; display: none; z-index: 200;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.08);
     }
-
-    @keyframes dropIn {
-      from { opacity: 0; transform: translateY(-6px); }
-      to   { opacity: 1; transform: translateY(0); }
+    .dropdown.show { display: block; animation: fadeIn 0.15s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+    .dropdown a {
+      display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 6px;
+      font-size: 0.83rem; color: var(--muted); cursor: pointer; text-decoration: none;
+      transition: all 0.15s;
     }
+    .dropdown a:hover { background: var(--coral-dim); color: var(--coral); }
+    .dropdown a.quit:hover { background: var(--red-dim); color: var(--red); }
 
-    .user-dropdown.open { display: block; }
+    /* ════════════════ Main ════════════════ */
+    .main { position: relative; z-index: 1; padding: 0 36px 80px; max-width: 1280px; margin: 0 auto; }
 
-    .dd-item {
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      padding: 9px 13px;
-      border-radius: 8px;
-      font-size: 0.86rem;
-      cursor: pointer;
-      color: var(--muted);
-      transition: background 0.15s, color 0.15s;
-    }
-
-    .dd-item svg { width: 15px; height: 15px; flex-shrink: 0; }
-    .dd-item:hover { background: var(--surface-h); color: var(--text); }
-    .dd-item.danger:hover { background: rgba(255,60,60,0.1); color: #ff8080; }
-
-    /* ── 主内容 ── */
-    .main { position: relative; z-index: 1; padding: 0 40px 60px; }
-
-    /* ── Hero ── */
+    /* ════════════════ Hero ════════════════ */
     .hero {
-      margin: 28px 0;
-      border-radius: 20px;
-      background: linear-gradient(120deg,
-        rgba(0,212,255,0.08) 0%,
-        rgba(124,58,237,0.06) 50%,
-        rgba(4,5,15,0.95) 100%);
-      border: 1px solid var(--border);
-      padding: 36px 48px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      overflow: hidden;
-      position: relative;
+      margin: 32px 0; border-radius: 22px;
+      background: linear-gradient(135deg, rgba(255,150,100,0.08) 0%, rgba(255,248,240,0.6) 40%, rgba(107,165,135,0.06) 100%);
+      border: 1px solid rgba(0,0,0,0.05);
+      padding: 42px 48px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: relative; overflow: hidden;
     }
-
-    .hero::before {
-      content: '';
-      position: absolute;
-      width: 300px; height: 300px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(0,212,255,0.08), transparent 70%);
-      top: -80px; left: -60px;
-      pointer-events: none;
-    }
-
     .hero::after {
-      content: '';
-      position: absolute;
-      width: 200px; height: 200px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(124,58,237,0.1), transparent 70%);
-      bottom: -40px; right: 200px;
+      content: ''; position: absolute; right: -60px; top: -80px;
+      width: 320px; height: 320px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,160,120,0.10), transparent 70%);
       pointer-events: none;
     }
-
-    .hero-left { position: relative; z-index: 1; }
-
-    .hero-left h1 {
-      font-size: 2rem;
-      font-weight: 800;
-      line-height: 1.2;
-      margin-bottom: 8px;
+    .hero h1 { font-size: 1.9rem; font-weight: 700; line-height: 1.25; position: relative; z-index: 1; }
+    .hero h1 em { font-style: normal; color: var(--coral); }
+    .hero p { color: var(--muted); font-size: 0.9rem; margin-top: 8px; position: relative; z-index: 1; }
+    .hero-timer { display: flex; align-items: center; gap: 6px; position: relative; z-index: 1; margin-top: 20px; }
+    .hero-timer .lbl { font-size: 0.8rem; color: var(--muted); margin-right: 6px; }
+    .tick {
+      background: rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.08);
+      border-radius: 7px; padding: 7px 10px; font-size: 1.35rem; font-weight: 700;
+      font-variant-numeric: tabular-nums; color: var(--text); min-width: 46px; text-align: center;
     }
-
-    .hero-left h1 span {
-      background: linear-gradient(90deg, var(--cyan), #00a8cc);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+    .tick.pulse { animation: tickPulse 0.35s ease; }
+    @keyframes tickPulse {
+      0% { border-color: rgba(0,0,0,0.08); box-shadow: none; }
+      50% { border-color: var(--coral); box-shadow: 0 0 18px rgba(255,107,91,0.3); }
+      100% { border-color: rgba(0,0,0,0.08); box-shadow: none; }
     }
+    .tick-sep { font-size: 1.2rem; font-weight: 700; color: var(--muted); }
 
-    .hero-left p { color: var(--muted); font-size: 0.92rem; margin-bottom: 22px; }
-
-    /* 倒计时块 */
-    .hero-countdown { display: flex; align-items: center; gap: 8px; }
-
-    .countdown-label { font-size: 0.82rem; color: var(--muted); margin-right: 4px; }
-
-    .time-block {
-      background: rgba(0,0,0,0.5);
-      border: 1px solid rgba(255,184,0,0.35);
-      border-radius: 8px;
-      padding: 8px 12px;
-      font-size: 1.45rem;
-      font-weight: 800;
-      font-variant-numeric: tabular-nums;
-      line-height: 1;
-      min-width: 52px;
-      text-align: center;
-      color: var(--gold);
-      box-shadow: 0 0 14px rgba(255,184,0,0.12), inset 0 0 8px rgba(255,184,0,0.04);
-      transition: box-shadow 0.3s;
+    /* ════════════════ Section header ════════════════ */
+    .sec-head {
+      display: flex; align-items: center; justify-content: space-between;
+      margin: 44px 0 16px;
     }
-
-    .time-block.pulse {
-      animation: goldPulse 0.4s ease;
+    .sec-head h2 {
+      font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 10px;
     }
-
-    @keyframes goldPulse {
-      0%   { box-shadow: 0 0 14px rgba(255,184,0,0.12); }
-      50%  { box-shadow: 0 0 28px rgba(255,184,0,0.5); }
-      100% { box-shadow: 0 0 14px rgba(255,184,0,0.12); }
-    }
-
-    .time-sep { font-size: 1.35rem; font-weight: 800; color: var(--gold); opacity: 0.5; }
-
-    /* ── 区块标题 ── */
-    .section-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin: 36px 0 18px;
-    }
-
-    .section-head h2 {
-      font-size: 1.15rem;
-      font-weight: 800;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .section-head h2 svg { width: 18px; height: 18px; }
-
+    .sec-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .sec-dot.live { background: var(--coral); box-shadow: 0 0 10px rgba(255,107,91,0.4); animation: breathe 2s ease-in-out infinite; }
+    .sec-dot.soon { background: var(--gold); }
     .sec-badge {
-      font-size: 0.7rem;
-      font-weight: 700;
-      padding: 3px 10px;
-      border-radius: 20px;
+      font-size: 0.68rem; font-weight: 700; padding: 2px 9px; border-radius: 20px;
     }
+    .sec-badge.live { background: var(--coral-dim); color: var(--coral); border: 1px solid rgba(255,107,91,0.2); }
+    .sec-badge.soon { background: var(--gold-dim); color: var(--gold); }
 
-    .sec-badge.live {
-      background: linear-gradient(90deg, var(--cyan), #00a8cc);
-      color: #000;
-      box-shadow: 0 0 12px rgba(0,212,255,0.35);
-    }
-
-    .sec-badge.soon {
-      background: linear-gradient(90deg, var(--purple), #6d28d9);
-      color: #fff;
-    }
-
-    .section-head a {
-      font-size: 0.82rem;
-      color: var(--muted);
-      text-decoration: none;
-      transition: color 0.2s;
-      cursor: pointer;
-    }
-
-    .section-head a:hover { color: var(--cyan); }
-
-    /* ── 商品网格 ── */
+    /* ════════════════ Grid ════════════════ */
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
       gap: 18px;
     }
 
-    /* ── 卡片 ── */
+    /* ════════════════ Card ════════════════ */
     .card {
-      background: var(--surface);
+      background: var(--card-bg);
       border: 1px solid var(--border);
-      border-radius: 18px;
-      overflow: visible;
+      border-radius: 16px; overflow: hidden;
       cursor: pointer;
-      transition:
-        box-shadow 0.3s,
-        border-color 0.7s,
-        background 0.7s;
+      transition: border-color 0.4s, box-shadow 0.4s, transform 0.3s;
       position: relative;
-      transform-style: preserve-3d;
-      will-change: transform;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.04);
     }
-
-    .card-inner {
-      border-radius: 18px;
-      overflow: hidden;
-      position: relative;
-      background: var(--surface);
-    }
-
-    /* 高光层（跟随鼠标） */
-    .card-shine {
-      position: absolute;
-      inset: 0;
-      border-radius: 18px;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.3s;
-      background: radial-gradient(circle at 50% 50%,
-        rgba(0,212,255,0.08),
-        transparent 60%);
-      z-index: 2;
-    }
-
-    .card:hover .card-shine { opacity: 1; }
-
     .card:hover {
-      box-shadow:
-        0 20px 50px rgba(0,0,0,0.5),
-        0 0 0 1px var(--border-h),
-        0 0 30px rgba(0,212,255,0.06);
       border-color: var(--border-h);
+      box-shadow: 0 12px 36px rgba(0,0,0,0.10), 0 0 20px rgba(255,140,100,0.08);
+      transform: translateY(-2px);
     }
-
-    /* 标签 */
-    .card-tag {
-      position: absolute;
-      top: 12px; left: 12px;
-      font-size: 0.7rem;
-      font-weight: 700;
-      padding: 3px 10px;
-      border-radius: 20px;
-      z-index: 3;
-      letter-spacing: 0.3px;
-    }
-
-    .card-tag.hot  { background: rgba(255,184,0,0.9); color: #000; box-shadow: 0 0 10px rgba(255,184,0,0.4); }
-    .card-tag.new  { background: rgba(0,212,255,0.85); color: #000; box-shadow: 0 0 10px rgba(0,212,255,0.4); }
-    .card-tag.soon { background: rgba(124,58,237,0.85); color: #fff; }
-
-    /* 商品图区 */
     .card-img {
-      height: 155px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-      overflow: hidden;
+      height: 170px; display: flex; align-items: center; justify-content: center;
+      position: relative; overflow: hidden; background: #F8F5F0;
     }
-
-    .card-img-real { width: 100%; height: 100%; object-fit: cover; position: relative; z-index: 1; transition: transform 0.3s; }
-    .card:hover .card-img-real { transform: scale(1.06); }
-
-    .card-img::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      opacity: 0.06;
-      background: radial-gradient(circle, var(--cyan), transparent);
+    .card-img img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.45s; }
+    .card:hover .card-img img { transform: scale(1.05); }
+    .card-img .placeholder {
+      font-size: 2.8rem; opacity: 0.10; position: absolute; color: var(--gold);
     }
-
-    /* ── 紧迫感效果 ── */
-
-    .card.urgency-safe {
-      border-color: rgba(0, 212, 255, 0.12);
+    .card-tag {
+      position: absolute; top: 10px; left: 10px; font-size: 0.68rem; font-weight: 700;
+      padding: 3px 9px; border-radius: 20px; z-index: 2;
     }
-
-    .card.urgency-warning {
-      border-color: rgba(255, 184, 0, 0.35);
-      box-shadow: 0 0 20px rgba(255, 184, 0, 0.1);
-    }
-
-    .card.urgency-warning .t { color: var(--amber); }
-
-    .card.urgency-danger {
-      border-color: rgba(255, 70, 70, 0.45);
-      box-shadow: 0 0 25px rgba(255, 70, 70, 0.15);
-      animation: squeezePulse 0.75s ease-in-out infinite;
-    }
-
-    .card.urgency-danger .t { color: #FF5555; }
-
-    @keyframes squeezePulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scaleX(0.955) scaleY(0.98); }
-    }
-
-    .card.urgency-critical {
-      border-color: rgba(255, 30, 30, 0.6);
-      box-shadow: 0 0 35px rgba(255, 30, 30, 0.22), inset 0 0 40px rgba(255,0,0,0.06);
-      animation: squeezePulseFast 0.4s ease-in-out infinite;
-      background: rgba(255, 0, 0, 0.05);
-    }
-
-    .card.urgency-critical .t {
-      color: #FF2020;
-      animation: flashText 0.45s ease-in-out infinite;
-    }
-
-    @keyframes squeezePulseFast {
-      0%, 100% { transform: scale(1); }
-      30% { transform: scaleX(0.93) scaleY(0.965); }
-      70% { transform: scaleX(0.97); }
-    }
-
-    @keyframes flashText {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.25; }
-    }
-
-    /* 进度条 */
-    .card-progress { padding: 0 16px; margin-top: -2px; }
-
-    .progress-track {
-      height: 3px;
-      background: rgba(255,255,255,0.07);
-      border-radius: 4px;
-      overflow: hidden;
-    }
-
-    .progress-fill {
-      height: 100%;
-      border-radius: 4px;
-      transition: width 1.2s ease;
-    }
-
-    .progress-fill.normal { background: linear-gradient(90deg, var(--cyan), #00a8cc); }
-    .progress-fill.urgent { background: linear-gradient(90deg, var(--gold), #ff9500); animation: urgentPulse 1.5s ease-in-out infinite; }
-
-    @keyframes urgentPulse {
-      0%,100% { box-shadow: none; }
-      50% { box-shadow: 0 0 8px rgba(255,184,0,0.6); }
-    }
-
-    .progress-meta {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 5px;
-      font-size: 0.7rem;
-      color: var(--muted);
-    }
-
-    .progress-meta .urgent-text { color: var(--gold); font-weight: 600; }
-
-    /* 卡片信息 */
-    .card-body { padding: 13px 16px 15px; }
-
+    .card-tag.hot  { background: rgba(255,107,91,0.88); color: #fff; }
+    .card-tag.new  { background: rgba(107,165,135,0.85); color: #fff; }
+    .card-body { padding: 14px 16px 16px; }
     .card-name {
-      font-size: 0.92rem;
-      font-weight: 700;
-      margin-bottom: 6px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      font-size: 0.9rem; font-weight: 600; margin-bottom: 8px; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
+    .card-price { display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px; }
+    .price-now { font-size: 1.3rem; font-weight: 700; color: var(--coral); }
+    .price-old { font-size: 0.78rem; color: var(--muted); text-decoration: line-through; }
+    .price-off { font-size: 0.68rem; font-weight: 700; padding: 2px 7px; border-radius: 5px; background: var(--coral-dim); color: var(--coral); margin-left: auto; }
+    .card-progress { margin-bottom: 10px; }
+    .bar-track { height: 4px; background: rgba(0,0,0,0.04); border-radius: 4px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 4px; transition: width 1s ease; }
+    .bar-fill.ok  { background: linear-gradient(90deg, var(--gold-light), var(--gold)); }
+    .bar-fill.hot { background: linear-gradient(90deg, var(--coral), #e04848); animation: barGlow 1.2s ease-in-out infinite; }
+    @keyframes barGlow { 0%,100% { box-shadow: none; } 50% { box-shadow: 0 0 12px rgba(255,107,91,0.5); } }
+    .bar-meta { display: flex; justify-content: space-between; margin-top: 4px; font-size: 0.7rem; color: var(--muted); }
+    .bar-meta .hot-text { color: var(--coral); font-weight: 600; }
+    .card-footer { display: flex; align-items: center; justify-content: space-between; }
+    .card-timer { font-size: 0.76rem; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+    .card-timer .t { color: var(--
+    gold); font-weight: 600; font-variant-numeric: tabular-nums; }
 
-    .card-price {
-      display: flex;
-      align-items: baseline;
-      gap: 7px;
-      margin-bottom: 9px;
-    }
-
-    .price-now {
-      font-size: 1.35rem;
-      font-weight: 800;
-      color: var(--gold);
-      font-variant-numeric: tabular-nums;
-    }
-
-    .price-old {
-      font-size: 0.8rem;
-      color: var(--muted);
-      text-decoration: line-through;
-    }
-
-    .price-off {
-      font-size: 0.7rem;
-      font-weight: 700;
-      padding: 2px 7px;
-      border-radius: 6px;
-      background: var(--gold-dim);
-      color: var(--gold);
-      border: 1px solid rgba(255,184,0,0.2);
-      margin-left: auto;
-    }
-
-    .card-timer {
-      font-size: 0.76rem;
-      color: var(--muted);
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      margin-bottom: 11px;
-    }
-
-    .card-timer svg { width: 12px; height: 12px; flex-shrink: 0; }
-    .card-timer .t { font-weight: 700; color: var(--amber); font-variant-numeric: tabular-nums; }
-
-    /* 抢购按钮 */
     .card-btn {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid rgba(0,212,255,0.3);
-      border-radius: 10px;
-      background: linear-gradient(135deg, rgba(0,212,255,0.14), rgba(0,168,204,0.08));
-      color: var(--cyan);
-      font-size: 0.88rem;
-      font-weight: 700;
-      font-family: inherit;
-      cursor: pointer;
-      opacity: 0;
-      transform: translateY(5px);
-      transition: opacity 0.22s, transform 0.22s, box-shadow 0.2s, background 0.2s;
-      position: relative;
-      overflow: hidden;
-      letter-spacing: 0.3px;
+      padding: 7px 16px; border-radius: 8px; font-size: 0.82rem; font-weight: 700;
+      border: 1px solid rgba(255,107,91,0.25); cursor: pointer; font-family: inherit;
+      background: linear-gradient(135deg, rgba(255,107,91,0.12), rgba(255,142,83,0.06));
+      color: var(--coral); transition: all 0.2s;
     }
-
-    .card:hover .card-btn { opacity: 1; transform: translateY(0); }
-
     .card-btn:hover {
-      background: linear-gradient(135deg, rgba(0,212,255,0.24), rgba(0,168,204,0.16));
-      box-shadow: 0 0 20px rgba(0,212,255,0.25);
-      border-color: var(--cyan);
+      background: linear-gradient(135deg, rgba(255,107,91,0.22), rgba(255,142,83,0.14));
+      border-color: var(--coral); box-shadow: 0 0 16px rgba(255,107,91,0.2);
+    }
+    .card-btn.off {
+      border-color: rgba(0,0,0,0.06); background: rgba(0,0,0,0.02);
+      color: var(--muted); cursor: not-allowed;
+    }
+    .card-btn.off:hover { box-shadow: none; border-color: rgba(0,0,0,0.06); background: rgba(0,0,0,0.02); }
+
+    /* Urgency */
+    .card.urgent { border-color: rgba(255,140,100,0.4); box-shadow: 0 0 22px rgba(255,140,100,0.10); }
+    .card.urgent .t { color: var(--coral); }
+    .card.critical {
+      border-color: rgba(224,69,69,0.5); box-shadow: 0 0 28px rgba(224,69,69,0.14);
+      animation: criticalPulse 0.7s ease-in-out infinite;
+    }
+    .card.critical .t { color: var(--red); }
+    @keyframes criticalPulse {
+      0%, 100% { box-shadow: 0 0 28px rgba(224,69,69,0.14); }
+      50% { box-shadow: 0 0 42px rgba(224,69,69,0.28); }
     }
 
-    .card-btn.disabled {
-      border-color: rgba(255,255,255,0.1);
-      background: rgba(255,255,255,0.04);
-      color: var(--muted);
-      cursor: not-allowed;
+    /* ════════════════ Skeleton ════════════════ */
+    .skeleton {
+      background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px;
+      overflow: hidden; height: 310px;
+    }
+    .sk-img { height: 170px; background: rgba(0,0,0,0.03); animation: shimmer 1.8s infinite; }
+    .sk-body { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+    .sk-line { height: 14px; border-radius: 4px; background: rgba(0,0,0,0.04); animation: shimmer 1.8s infinite; }
+    .sk-line.w60 { width: 60%; }
+    .sk-line.w80 { width: 80%; }
+    .sk-line.w40 { width: 40%; }
+    @keyframes shimmer {
+      0% { opacity: 0.4; } 50% { opacity: 0.8; } 100% { opacity: 0.4; }
     }
 
-    .card-btn.disabled:hover { box-shadow: none; background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.1); }
+    /* ════════════════ Empty ════════════════ */
+    .empty {
+      grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: var(--muted);
+    }
+    .empty .icon { font-size: 3rem; margin-bottom: 14px; opacity: 0.2; }
+    .empty p { font-size: 0.92rem; }
 
-    /* Ripple */
-    .ripple {
-      position: absolute;
-      border-radius: 50%;
-      background: rgba(0,212,255,0.25);
-      transform: scale(0);
-      animation: rippleAnim 0.55s linear;
-      pointer-events: none;
+    /* ════════════════ Toast ════════════════ */
+    .toast {
+      position: fixed; bottom: 36px; left: 50%; transform: translateX(-50%) translateY(80px);
+      background: #fff; border: 1px solid var(--border-h); border-radius: 12px;
+      padding: 12px 22px; font-size: 0.86rem; font-weight: 500; color: var(--text);
+      box-shadow: 0 14px 36px rgba(0,0,0,0.12), 0 0 18px var(--coral-dim);
+      transition: all 0.35s cubic-bezier(.4,0,.2,1);
+      opacity: 0; z-index: 999; white-space: nowrap; display: flex; align-items: center; gap: 8px;
+    }
+    .toast.on { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+    /* ════════════════ Footer ════════════════ */
+    .foot {
+      border-top: 1px solid var(--border); padding: 22px 36px;
+      display: flex; justify-content: space-between; color: var(--muted); font-size: 0.78rem;
+      position: relative; z-index: 1;
     }
 
-    @keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }
-
-    /* ── Toast ── */
-    #toast {
-      position: fixed;
-      bottom: 32px;
-      left: 50%;
-      transform: translateX(-50%) translateY(80px);
-      background: #0d1020;
-      border: 1px solid var(--border-h);
-      border-radius: 14px;
-      padding: 13px 22px;
-      font-size: 0.88rem;
-      font-weight: 500;
-      box-shadow: 0 16px 40px rgba(0,0,0,0.6), 0 0 20px rgba(0,212,255,0.08);
-      transition: transform 0.35s cubic-bezier(.4,0,.2,1), opacity 0.35s;
-      opacity: 0;
-      z-index: 999;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      white-space: nowrap;
-      color: var(--text);
-    }
-
-    #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
-
-    /* ── Footer ── */
-    .footer {
-      margin-top: 60px;
-      border-top: 1px solid var(--border);
-      padding: 26px 40px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      color: var(--muted);
-      font-size: 0.8rem;
-    }
-
-    /* ── 响应式 ── */
     @media (max-width: 640px) {
-      .navbar { padding: 0 18px; }
-      .main   { padding: 0 18px 40px; }
-      .hero   { padding: 22px; flex-direction: column; align-items: flex-start; gap: 18px; }
-      .nav-search, .nav-tabs { display: none; }
-      .footer { flex-direction: column; gap: 8px; text-align: center; }
+      .nav { padding: 0 16px; } .nav-links { display: none; }
+      .main { padding: 0 16px 60px; } .hero { padding: 24px; }
+      .foot { flex-direction: column; gap: 6px; }
     }
   </style>
 </head>
 <body>
 
-<div id="cursor-glow"></div>
+<!-- ═══════ 背景三层 ═══════ -->
+<div class="bg-base"></div>
+<div class="tense-overlay"></div>
 
-<nav class="navbar">
-  <div class="nav-logo">
-    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-    SeckillPro
+<div class="shapes" id="shapes">
+  <!-- 方块 -->
+  <div class="shape sq blue sh-1"></div>
+  <div class="shape sq2 teal sh-2"></div>
+  <div class="shape sq green sh-3"></div>
+  <div class="shape sq2 navy sh-4"></div>
+  <div class="shape sq sky sh-5"></div>
+  <!-- 三角 -->
+  <div class="shape tri cyan sh-6"></div>
+  <div class="shape tri blue sh-7"></div>
+  <div class="shape tri teal sh-8"></div>
+  <!-- 菱形 -->
+  <div class="shape di green sh-9"></div>
+  <div class="shape di plum sh-10"></div>
+  <div class="shape di navy sh-11"></div>
+  <!-- 六边形 -->
+  <div class="shape he sky sh-12"></div>
+  <div class="shape he cyan sh-13"></div>
+  <div class="shape he blue sh-14"></div>
+  <div class="shape he teal sh-15"></div>
+</div>
+
+<div class="plants">
+  <!-- 左下角: 龟背竹叶 -->
+  <svg class="plant plant-left" id="plantLeft" viewBox="0 0 280 320" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="leafGrad1" x1="0%" y1="100%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#C8A882"/>
+        <stop offset="100%" stop-color="#A8C898"/>
+      </linearGradient>
+    </defs>
+    <!-- 主茎 -->
+    <path d="M140 320 Q130 240 135 180 Q140 130 145 80" fill="none" stroke="#C8A882" stroke-width="3" opacity="0.6"/>
+    <!-- 大叶 1 -->
+    <ellipse cx="90" cy="160" rx="55" ry="35" fill="url(#leafGrad1)" transform="rotate(-30 90 160)" opacity="0.7"/>
+    <path d="M90 160 Q80 140 95 130" fill="none" stroke="#B89870" stroke-width="1.5" opacity="0.4"/>
+    <!-- 大叶 2 -->
+    <ellipse cx="190" cy="190" rx="50" ry="32" fill="url(#leafGrad1)" transform="rotate(25 190 190)" opacity="0.65"/>
+    <!-- 小叶 -->
+    <ellipse cx="70" cy="110" rx="35" ry="22" fill="url(#leafGrad1)" transform="rotate(-45 70 110)" opacity="0.55"/>
+    <ellipse cx="200" cy="130" rx="30" ry="20" fill="url(#leafGrad1)" transform="rotate(40 200 130)" opacity="0.5"/>
+    <!-- 顶端叶 -->
+    <ellipse cx="140" cy="70" rx="38" ry="24" fill="url(#leafGrad1)" opacity="0.6"/>
+  </svg>
+
+  <!-- 右下角: 蕨类 -->
+  <svg class="plant plant-right" id="plantRight" viewBox="0 0 240 280" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="leafGrad2" x1="0%" y1="100%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#B89878"/>
+        <stop offset="100%" stop-color="#90B880"/>
+      </linearGradient>
+    </defs>
+    <path d="M120 280 Q115 200 118 140 Q120 90 122 50" fill="none" stroke="#B89878" stroke-width="2.5" opacity="0.5"/>
+    <ellipse cx="170" cy="170" rx="45" ry="28" fill="url(#leafGrad2)" transform="rotate(20 170 170)" opacity="0.6"/>
+    <ellipse cx="75" cy="150" rx="40" ry="25" fill="url(#leafGrad2)" transform="rotate(-25 75 150)" opacity="0.55"/>
+    <ellipse cx="160" cy="110" rx="35" ry="22" fill="url(#leafGrad2)" transform="rotate(35 160 110)" opacity="0.5"/>
+    <ellipse cx="85" cy="100" rx="32" ry="20" fill="url(#leafGrad2)" transform="rotate(-35 85 100)" opacity="0.48"/>
+    <ellipse cx="125" cy="55" rx="30" ry="18" fill="url(#leafGrad2)" opacity="0.5"/>
+  </svg>
+
+  <!-- 右上角: 小藤蔓 -->
+  <svg class="plant plant-top" id="plantTop" viewBox="0 0 160 180" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="leafGrad3" x1="0%" y1="100%" x2="0%" y2="0%">
+        <stop offset="0%" stop-color="#D0B898"/>
+        <stop offset="100%" stop-color="#A0C090"/>
+      </linearGradient>
+    </defs>
+    <path d="M80 180 Q85 140 75 100 Q65 60 80 30" fill="none" stroke="#D0B898" stroke-width="2" opacity="0.5"/>
+    <ellipse cx="55" cy="120" rx="30" ry="18" fill="url(#leafGrad3)" transform="rotate(-30 55 120)" opacity="0.5"/>
+    <ellipse cx="105" cy="90" rx="28" ry="16" fill="url(#leafGrad3)" transform="rotate(25 105 90)" opacity="0.45"/>
+    <ellipse cx="65" cy="60" rx="24" ry="14" fill="url(#leafGrad3)" transform="rotate(-20 65 60)" opacity="0.4"/>
+    <ellipse cx="85" cy="30" rx="22" ry="12" fill="url(#leafGrad3)" opacity="0.4"/>
+  </svg>
+</div>
+
+<!-- ═══════ 鼠标暖光 ═══════ -->
+<div id="cursor-warm"></div>
+
+<!-- ═══════ Nav ═══════ -->
+<nav class="nav">
+  <div class="nav-brand"><span class="dot"></span>SeckillPro</div>
+  <div class="nav-links">
+    <button class="nav-link on">秒杀大厅</button>
+    <button class="nav-link" onclick="window.location.href='admin.html'">活动管理</button>
+    <button class="nav-link" onclick="window.location.href='cache-stats.html'">缓存监控</button>
+    <button class="nav-link" onclick="window.location.href='orders.html'">我的订单</button>
+    <button class="nav-link" onclick="window.location.href='user.html'">个人中心</button>
   </div>
-  <div class="nav-tabs">
-    <button class="nav-tab active">秒杀大厅</button>
-    <button class="nav-tab">品牌专区</button>
-    <button class="nav-tab">排行榜</button>
-    <button class="nav-tab">我的订单</button>
-  </div>
-  <div class="nav-spacer"></div>
-  <div class="nav-search">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-    <input type="text" placeholder="搜索商品..." aria-label="搜索商品" />
-  </div>
-  <div class="nav-user" id="navUser" onclick="toggleDropdown()">
-    <div class="nav-avatar" id="navAvatar">U</div>
-    <span class="nav-name" id="navName">用户</span>
-    <span class="nav-chevron">▾</span>
-    <div class="user-dropdown" id="userDropdown">
-      <div class="dd-item">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        个人中心
-      </div>
-      <div class="dd-item">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-        我的订单
-      </div>
-      <div class="dd-item">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-        我的收藏
-      </div>
-      <div class="dd-item danger" onclick="logout()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-        退出登录
+  <div class="nav-right">
+    <div class="nav-user" id="navUser" onclick="toggleDropdown()">
+      <div class="nav-avatar" id="navAvatar">U</div>
+      <span class="nav-name" id="navName">用户</span>
+      <div class="dropdown" id="dropdown">
+        <a onclick="window.location.href='orders.html'">我的订单</a>
+        <a onclick="window.location.href='user.html'">个人中心</a>
+        <a onclick="window.location.href='cache-stats.html'">缓存监控</a>
+        <a onclick="logout()" class="quit">退出登录</a>
       </div>
     </div>
   </div>
 </nav>
 
+<!-- ═══════ Main ═══════ -->
 <div class="main">
 
-  <!-- Hero -->
   <div class="hero">
-    <div class="hero-left">
-      <h1>今日秒杀<br><span>限时抢购，速度决定一切</span></h1>
-      <p>每天 10:00 / 14:00 / 20:00 准时开抢，错过等明天</p>
-      <div class="hero-countdown">
-        <span class="countdown-label">下场开抢</span>
-        <div class="time-block" id="th">00</div>
-        <span class="time-sep">:</span>
-        <div class="time-block" id="tm">00</div>
-        <span class="time-sep">:</span>
-        <div class="time-block" id="ts">00</div>
+    <div>
+      <h1>限时抢购 · <em>速度为王</em></h1>
+      <p>每日 10:00 / 14:00 / 20:00 准时开场，手慢则无</p>
+      <div class="hero-timer">
+        <span class="lbl">距下一场</span>
+        <div class="tick" id="th">00</div><span class="tick-sep">:</span>
+        <div class="tick" id="tm">00</div><span class="tick-sep">:</span>
+        <div class="tick" id="ts">00</div>
       </div>
     </div>
   </div>
 
-  <!-- 正在秒杀 -->
-  <div class="section-head">
-    <h2>
-      <svg viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-      正在秒杀
-      <span class="sec-badge live">进行中</span>
-    </h2>
-    <a>查看全部 →</a>
+  <div class="sec-head">
+    <h2><span class="sec-dot live"></span>正在秒杀<span class="sec-badge live">LIVE</span></h2>
   </div>
   <div class="grid" id="gridActive"></div>
 
-  <!-- 即将开始 -->
-  <div class="section-head" style="margin-top:44px">
-    <h2>
-      <svg viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      即将开始
-      <span class="sec-badge soon">预告</span>
-    </h2>
-    <a>查看全部 →</a>
+  <div class="sec-head">
+    <h2><span class="sec-dot soon"></span>即将开始<span class="sec-badge soon">预告</span></h2>
   </div>
   <div class="grid" id="gridSoon"></div>
 
 </div>
 
-<footer class="footer">
-  <span>© 2026 SeckillPro — 秒杀平台</span>
-  <span>仅供学习演示，商品数据为模拟数据</span>
+<footer class="foot">
+  <span>&copy; 2026 SeckillPro</span>
+  <span>仅供学习演示</span>
 </footer>
 
-<div id="toast">
-  <span id="toastIcon"></span>
-  <span id="toastMsg"></span>
-</div>
+<div class="toast" id="toast"><span id="toastIcon"></span><span id="toastMsg"></span></div>
 
 <script>
-/* ── 鼠标光晕 ── */
-const glow = document.getElementById('cursor-glow');
+const API = 'http://localhost:8028';
+
+/* ── 登录检查 ── */
+const userInfo = JSON.parse(sessionStorage.getItem('userInfo') || 'null');
+if (!userInfo) window.location.href = 'index.html';
+
+(function() {
+  if (!userInfo) return;
+  const name = userInfo.nickname || userInfo.phone || '用户';
+  document.getElementById('navName').textContent = name;
+  document.getElementById('navAvatar').textContent = name.charAt(0).toUpperCase();
+})();
+
+/* ── 鼠标暖光 ── */
+const glow = document.getElementById('cursor-warm');
 document.addEventListener('mousemove', e => {
   glow.style.left = e.clientX + 'px';
   glow.style.top  = e.clientY + 'px';
 });
 
-/* ── 登录态检查 ── */
-const userInfo = JSON.parse(sessionStorage.getItem('userInfo') || 'null');
-if (!userInfo) window.location.href = 'index.html';
-
-(function initUser() {
-  if (!userInfo) return;
-  const name = userInfo.nickname || userInfo.phone || '用户';
-  document.getElementById('navName').textContent   = name;
-  document.getElementById('navAvatar').textContent = name.charAt(0).toUpperCase();
-})();
-
 /* ── 下拉菜单 ── */
 function toggleDropdown() {
-  document.getElementById('userDropdown').classList.toggle('open');
+  document.getElementById('dropdown').classList.toggle('show');
 }
-
 document.addEventListener('click', e => {
   if (!document.getElementById('navUser').contains(e.target))
-    document.getElementById('userDropdown').classList.remove('open');
+    document.getElementById('dropdown').classList.remove('show');
 });
-
 function logout() {
   sessionStorage.removeItem('userInfo');
   window.location.href = 'index.html';
 }
 
 /* ── Toast ── */
-let toastTimer;
-function showToast(msg, icon) {
-  clearTimeout(toastTimer);
+let toastT;
+function toast(msg, icon) {
+  clearTimeout(toastT);
   document.getElementById('toastMsg').textContent = msg;
   document.getElementById('toastIcon').textContent = icon || '';
   const el = document.getElementById('toast');
-  el.classList.add('show');
-  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+  el.classList.add('on');
+  toastT = setTimeout(() => el.classList.remove('on'), 2600);
 }
 
-/* ── Ripple ── */
-function addRipple(btn, e) {
-  const rect = btn.getBoundingClientRect();
-  const rpl  = document.createElement('span');
-  rpl.className = 'ripple';
-  const size = Math.max(rect.width, rect.height);
-  rpl.style.cssText = `width:${size}px;height:${size}px;left:${e.clientX-rect.left-size/2}px;top:${e.clientY-rect.top-size/2}px`;
-  btn.appendChild(rpl);
-  setTimeout(() => rpl.remove(), 580);
+/* ── 紧张度: 扫描所有活动卡片剩余时间, 取最小值驱动背景 ── */
+function updateTension() {
+  let minSec = Infinity;
+  document.querySelectorAll('#gridActive .card-timer .t').forEach(el => {
+    const s = parseInt(el.dataset.sec, 10);
+    if (!isNaN(s) && s >= 0) minSec = Math.min(minSec, s);
+  });
+  let level = 0;
+  if (minSec <= 30) level = 3;
+  else if (minSec <= 60) level = 2;
+  else if (minSec <= 300) level = 1;
+  document.body.dataset.tension = String(level);
+
+  /* 植物抖动 */
+  ['plantLeft', 'plantRight', 'plantTop'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (level >= 2) el.classList.add('plant-shake');
+    else el.classList.remove('plant-shake');
+  });
 }
 
-/* ── Hero 倒计时（金色脉冲） ── */
-(function heroCountdown() {
-  const now   = new Date();
+/* ── Hero 倒计时 ── */
+(function() {
   const slots = [10, 14, 20];
-  let next    = null;
+  let next = null;
+  const now = new Date();
   for (const h of slots) {
     const t = new Date(now); t.setHours(h, 0, 0, 0);
     if (t > now) { next = t; break; }
   }
-  if (!next) {
-    next = new Date(now);
-    next.setDate(next.getDate() + 1);
-    next.setHours(10, 0, 0, 0);
-  }
+  if (!next) { next = new Date(now); next.setDate(next.getDate() + 1); next.setHours(10, 0, 0, 0); }
 
-  let prevS = -1;
+  let prev = -1;
   function tick() {
     const diff = Math.max(0, Math.floor((next - new Date()) / 1000));
-    const h = Math.floor(diff / 3600);
-    const m = Math.floor((diff % 3600) / 60);
+    document.getElementById('th').textContent = String(Math.floor(diff / 3600)).padStart(2, '0');
+    document.getElementById('tm').textContent = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
     const s = diff % 60;
-    const thEl = document.getElementById('th');
-    const tmEl = document.getElementById('tm');
-    const tsEl = document.getElementById('ts');
-    thEl.textContent = String(h).padStart(2,'0');
-    tmEl.textContent = String(m).padStart(2,'0');
-    tsEl.textContent = String(s).padStart(2,'0');
-    if (s !== prevS) {
-      tsEl.classList.remove('pulse');
-      void tsEl.offsetWidth;
-      tsEl.classList.add('pulse');
-      prevS = s;
-    }
+    const ts = document.getElementById('ts');
+    ts.textContent = String(s).padStart(2, '0');
+    if (s !== prev) { ts.classList.remove('pulse'); void ts.offsetWidth; ts.classList.add('pulse'); prev = s; }
   }
-  tick();
-  setInterval(tick, 1000);
+  tick(); setInterval(tick, 1000);
 })();
 
-/* ── 商品数据 ── */
-const activeProducts = [
-  { id:1, name:'Nintendo Switch OLED', imageUrl:'https://placehold.co/400x300/0a0f1a/00D4FF?text=Switch+OLED', priceNow:1799, priceOld:2999, off:'40%', sold:82, total:100, timer:12*60+35, totalTime:30*60, tag:'hot' },
-  { id:2, name:'Sony WH-1000XM5',      imageUrl:'https://placehold.co/400x300/0a0f1a/a78bfa?text=WH-1000XM5', priceNow:899,  priceOld:2499, off:'64%', sold:67, total:80,  timer:8*60+20,  totalTime:30*60, tag:'hot' },
-  { id:3, name:'戴森 V15 吸尘器',       imageUrl:'https://placehold.co/400x300/0a0f1a/00E5A0?text=Dyson+V15', priceNow:2199, priceOld:4990, off:'56%', sold:45, total:60,  timer:5*60+10,  totalTime:30*60, tag:null  },
-  { id:4, name:'iPad Air 6',            imageUrl:'https://placehold.co/400x300/0a0f1a/7C3AED?text=iPad+Air', priceNow:3999, priceOld:5999, off:'33%', sold:28, total:50,  timer:2*60+45,  totalTime:30*60, tag:'new' },
-  { id:5, name:'MacBook Air M4',        imageUrl:'https://placehold.co/400x300/0a0f1a/FFB800?text=MacBook+Air', priceNow:6499, priceOld:9999, off:'35%', sold:19, total:30,  timer:45,        totalTime:30*60, tag:null  },
-  { id:6, name:'小米 15 Ultra',          imageUrl:'https://placehold.co/400x300/0a0f1a/00D4FF?text=Mi+15+Ultra', priceNow:4299, priceOld:5999, off:'28%', sold:55, total:80,  timer:15,        totalTime:30*60, tag:'hot' },
-];
-
-const soonProducts = [
-  { id:7,  name:'AirPods Pro 3',      imageUrl:'https://placehold.co/400x300/0a0f1a/00D4FF?text=AirPods+Pro', priceNow:1299, priceOld:1899, off:'32%', timer:2*3600+15*60, tag:'soon' },
-  { id:8,  name:'DJI Osmo Pocket 4', imageUrl:'https://placehold.co/400x300/0a0f1a/00E5A0?text=DJI+Osmo', priceNow:2199, priceOld:3299, off:'33%', timer:2*3600+15*60, tag:'soon' },
-  { id:9,  name:'Kindle Scribe Pro',  imageUrl:'https://placehold.co/400x300/0a0f1a/7C3AED?text=Kindle', priceNow:799,  priceOld:1299, off:'38%', timer:2*3600+15*60, tag:'soon' },
-  { id:10, name:'华为 Mate 70 Pro',   imageUrl:'https://placehold.co/400x300/0a0f1a/FFB800?text=Mate+70+Pro', priceNow:5299, priceOld:7999, off:'34%', timer:2*3600+15*60, tag:'soon' },
-];
-
-function fmt2(n) { return String(n).padStart(2,'0'); }
-function fmt3(s) {
-  const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
+/* ── 工具 ── */
+function fmt2(n) { return String(n).padStart(2, '0'); }
+function fmtHMS(s) {
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
   return `${fmt2(h)}:${fmt2(m)}:${fmt2(sec)}`;
 }
 
-/* ── 渲染卡片 ── */
-function renderCard(p, isActive) {
-  const pct = isActive ? Math.round((p.sold / p.total) * 100) : 0;
-  const isUrgent = isActive && pct >= 70;
+/* ── Skeleton ── */
+function showSkeletons(container, count) {
+  container.innerHTML = '';
+  for (let i = 0; i < count; i++) {
+    const sk = document.createElement('div'); sk.className = 'skeleton';
+    sk.innerHTML = '<div class="sk-img"></div><div class="sk-body"><div class="sk-line w80"></div><div class="sk-line w60"></div><div class="sk-line w40"></div></div>';
+    container.appendChild(sk);
+  }
+}
 
-  const tagMap = { hot: '热卖', new: '新品', soon: '预告' };
-  const tagHtml = p.tag
-    ? `<div class="card-tag ${p.tag}">${tagMap[p.tag]}</div>` : '';
+/* ── 渲染卡片 ── */
+function cardHTML(p, isActive) {
+  const pct = isActive ? Math.min(100, Math.round((1 - (p.stockCount || p.stock || 0) / Math.max(p.totalStock || p.stockCount || 1, 1)) * 100)) : 0;
+  const isHot = pct >= 60;
+  const tag = pct >= 80 ? 'hot' : (pct === 0 ? 'new' : null);
+
+  const tagHtml = tag ? `<div class="card-tag ${tag}">${tag === 'hot' ? '热抢' : '新品'}</div>` : '';
+  const imgSrc = p.imageUrl || p.image || '';
+  const imgHtml = imgSrc
+    ? `<img src="${imgSrc}" alt="${p.name || p.goodsName || ''}" onerror="this.parentElement.innerHTML='<span class=placeholder>◆</span>'"/>`
+    : `<span class="placeholder">◆</span>`;
 
   const progressHtml = isActive ? `
     <div class="card-progress">
-      <div class="progress-track">
-        <div class="progress-fill ${isUrgent ? 'urgent' : 'normal'}" style="width:${pct}%"></div>
-      </div>
-      <div class="progress-meta">
-        <span>已抢 ${pct}%</span>
-        <span class="${isUrgent ? 'urgent-text' : ''}">剩余 ${p.total - p.sold} 件${isUrgent ? ' ⚠' : ''}</span>
-      </div>
+      <div class="bar-track"><div class="bar-fill ${isHot ? 'hot' : 'ok'}" style="width:${pct}%"></div></div>
+      <div class="bar-meta"><span>已抢 ${pct}%</span><span class="${isHot ? 'hot-text' : ''}">剩 ${p.stockCount ?? p.stock ?? 0} 件</span></div>
     </div>` : '';
 
-  const btnClass = isActive ? '' : 'disabled';
-  const btnText  = isActive ? '立即抢购' : '即将开抢';
+  const price = p.seckillPrice || p.price || 0;
+  const origPrice = p.originalPrice || (price ? Math.round(price * 1.8) : 0);
+  const offPct = origPrice ? Math.round((1 - price / origPrice) * 100) : 0;
 
-  const div = document.createElement('div');
-  div.className = 'card';
-  if (isActive) {
-    div.classList.add('urgency-safe');
-    div.dataset.totalTime = p.totalTime || p.timer;
-  }
-  div.innerHTML = `
-    <div class="card-shine"></div>
-    <div class="card-inner">
-      ${tagHtml}
-      <div class="card-img"><img src="${p.imageUrl}" alt="${p.name}" class="card-img-real" /></div>
-      ${progressHtml}
+  const btnDisabled = !isActive;
+  const btnText = isActive ? '立即抢购' : '即将开抢';
+
+  return `
+    <div class="card ${isActive && isHot && pct >= 85 ? 'critical' : (isHot ? 'urgent' : '')}" data-id="${p.id || p.goodsId || ''}">
+      <div class="card-img">${tagHtml}${imgHtml}</div>
       <div class="card-body">
-        <div class="card-name">${p.name}</div>
+        <div class="card-name">${p.name || p.goodsName || '商品'}</div>
         <div class="card-price">
-          <span class="price-now">¥${p.priceNow.toLocaleString()}</span>
-          <span class="price-old">¥${p.priceOld.toLocaleString()}</span>
-          <span class="price-off">-${p.off}</span>
+          <span class="price-now">&yen;${(price || 0).toLocaleString()}</span>
+          ${origPrice ? `<span class="price-old">&yen;${origPrice.toLocaleString()}</span>` : ''}
+          ${offPct ? `<span class="price-off">-${offPct}%</span>` : ''}
         </div>
-        <div class="card-timer">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          距结束 <span class="t" data-sec="${p.timer}">${fmt3(p.timer)}</span>
+        ${progressHtml}
+        <div class="card-footer">
+          <div class="card-timer">距结束 <span class="t" data-sec="${p.remaining || 0}">${fmtHMS(p.remaining || 0)}</span></div>
+          <button class="card-btn ${btnDisabled ? 'off' : ''}">${btnText}</button>
         </div>
-        <button class="card-btn ${btnClass}" data-id="${p.id}">${btnText}</button>
       </div>
     </div>`;
+}
 
-  /* 3D 倾斜交互 */
-  div.addEventListener('mousemove', function (e) {
-    const rect   = this.getBoundingClientRect();
-    const cx     = rect.left + rect.width / 2;
-    const cy     = rect.top  + rect.height / 2;
-    const dx     = (e.clientX - cx) / (rect.width / 2);
-    const dy     = (e.clientY - cy) / (rect.height / 2);
-    const rx     = -dy * 7;
-    const ry     = dx * 7;
-    this.style.transform = `perspective(800px) rotateX(${rx}deg) rotateY(${ry}deg) translateZ(4px)`;
+/* ── 数据加载 ── */
+async function loadActive() {
+  const grid = document.getElementById('gridActive');
+  showSkeletons(grid, 4);
 
-    /* 高光跟随 */
-    const shine = this.querySelector('.card-shine');
-    const px = ((e.clientX - rect.left) / rect.width)  * 100;
-    const py = ((e.clientY - rect.top)  / rect.height) * 100;
-    shine.style.background = `radial-gradient(circle at ${px}% ${py}%, rgba(0,212,255,0.1), transparent 55%)`;
-  });
+  try {
+    const token = userInfo?.token || '';
+    const [skRes, goodsRes] = await Promise.all([
+      fetch(`${API}/api/seckill/list/in-progress`, { headers: { 'Authorization': token } }),
+      fetch(`${API}/api/goods/list?order=asc`, { headers: { 'Authorization': token } })
+    ]);
 
-  div.addEventListener('mouseleave', function () {
-    this.style.transform = '';
-    this.style.transition = 'transform 0.45s cubic-bezier(.4,0,.2,1), box-shadow 0.3s, border-color 0.3s';
-    setTimeout(() => { this.style.transition = ''; }, 450);
-  });
+    const skData = await skRes.json();
+    const goodsData = await goodsRes.json();
 
-  /* 抢购 */
-  if (isActive) {
-    const btn = div.querySelector('.card-btn');
-    btn.addEventListener('click', function (e) {
-      e.stopPropagation();
-      addRipple(this, e);
-      showToast(`已加入抢购队列：${p.name}`, '⚡');
+    if (skData.code !== '00000' || !skData.data) { grid.innerHTML = '<div class="empty"><div class="icon">◆</div><p>暂无进行中的秒杀活动</p></div>'; return; }
+
+    const seckills = skData.data;
+    const goodsMap = {};
+    if (goodsData.code === '00000' && goodsData.data) {
+      goodsData.data.forEach(g => { goodsMap[g.id] = g; });
+    }
+
+    grid.innerHTML = '';
+    seckills.forEach(sk => {
+      const goods = goodsMap[sk.goodsId] || {};
+      const now = new Date();
+      const end = sk.endTime ? new Date(sk.endTime) : new Date(Date.now() + 1800000);
+      const remaining = Math.max(0, Math.floor((end - now) / 1000));
+
+      const item = {
+        id: sk.id,
+        goodsId: sk.goodsId,
+        name: goods.name || '商品 #' + sk.goodsId,
+        imageUrl: goods.imageUrl || null,
+        price: goods.price || 0,
+        seckillPrice: sk.seckillPrice,
+        originalPrice: goods.price || 0,
+        stockCount: sk.stockCount,
+        totalStock: sk.stockCount,
+        remaining: remaining,
+        startTime: sk.startTime,
+        endTime: sk.endTime
+      };
+      grid.innerHTML += cardHTML(item, true);
     });
-  }
 
-  return div;
-}
-
-function render() {
-  const ga = document.getElementById('gridActive');
-  const gs = document.getElementById('gridSoon');
-  activeProducts.forEach(p => ga.appendChild(renderCard(p, true)));
-  soonProducts.forEach(p  => gs.appendChild(renderCard(p, false)));
-}
-
-render();
-
-/* ── 卡片倒计时 ── */
-function updateUrgency(card, remaining, totalTime) {
-  const elapsedRatio = 1 - (remaining / totalTime);
-  const tEl = card.querySelector('.t');
-  const levels = ['urgency-safe', 'urgency-warning', 'urgency-danger', 'urgency-critical'];
-  card.classList.remove(...levels);
-  if (tEl) tEl.classList.remove('urgency-warning', 'urgency-danger', 'urgency-critical');
-
-  if (remaining <= 0 || elapsedRatio > 0.95) {
-    card.classList.add('urgency-critical');
-    if (tEl) tEl.classList.add('urgency-critical');
-  } else if (elapsedRatio > 0.8) {
-    card.classList.add('urgency-danger');
-    if (tEl) tEl.classList.add('urgency-danger');
-  } else if (elapsedRatio > 0.5) {
-    card.classList.add('urgency-warning');
-    if (tEl) tEl.classList.add('urgency-warning');
-  } else {
-    card.classList.add('urgency-safe');
+    bindCardEvents(grid);
+    updateTension();
+  } catch (e) {
+    grid.innerHTML = '<div class="empty"><div class="icon">◆</div><p>加载失败，请稍后重试</p></div>';
   }
 }
 
+function loadSoon() {
+  const grid = document.getElementById('gridSoon');
+  grid.innerHTML = '<div class="empty"><div class="icon">◇</div><p>敬请期待下一场秒杀</p></div>';
+}
+
+function bindCardEvents(grid) {
+  grid.querySelectorAll('.card-btn:not(.off)').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const card = this.closest('.card');
+      const name = card.querySelector('.card-name')?.textContent || '商品';
+      toast(`已加入抢购队列：${name}`, '⚡');
+    });
+  });
+}
+
+/* ── 定时更新倒计时 + urgency + tension ── */
 setInterval(() => {
-  document.querySelectorAll('.card-timer .t').forEach(el => {
+  document.querySelectorAll('#gridActive .card-timer .t').forEach(el => {
     let s = parseInt(el.dataset.sec, 10);
     if (s > 0) { s--; el.dataset.sec = String(s); }
-    el.textContent = fmt3(s);
+    el.textContent = fmtHMS(s);
 
     const card = el.closest('.card');
-    if (card && card.dataset.totalTime) {
-      updateUrgency(card, s, parseInt(card.dataset.totalTime));
+    if (!card) return;
+    card.classList.remove('urgent', 'critical');
+    if (s <= 30) card.classList.add('critical');
+    else if (s <= 120) card.classList.add('urgent');
+
+    if (s <= 0) {
+      const btn = card.querySelector('.card-btn');
+      if (btn) { btn.classList.add('off'); btn.textContent = '已结束'; }
     }
   });
+  updateTension();
 }, 1000);
 
-/* ── Nav Tab ── */
-document.querySelectorAll('.nav-tab').forEach(btn => {
-  btn.addEventListener('click', function () {
-    document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
-    this.classList.add('active');
+/* ── Nav ── */
+document.querySelectorAll('.nav-link').forEach(b => {
+  b.addEventListener('click', function() {
+    document.querySelectorAll('.nav-link').forEach(x => x.classList.remove('on'));
+    this.classList.add('on');
   });
 });
+
+/* ── Init ── */
+loadActive();
+loadSoon();
 </script>
 </body>
 </html>

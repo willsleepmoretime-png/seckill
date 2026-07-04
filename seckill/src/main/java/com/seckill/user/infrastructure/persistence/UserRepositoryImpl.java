@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 
 @Repository
@@ -29,5 +30,15 @@ public class UserRepositoryImpl implements UserRepository {
     public void save(User user){
         //要写回数据库中
         userMapper.insert(user);
+    }
+
+    @Override
+    public boolean deductBalance(Long userId, BigDecimal amount) {
+        return userMapper.deductBalance(userId, amount) > 0;
+    }
+
+    @Override
+    public boolean addBalance(Long userId, BigDecimal amount) {
+        return userMapper.addBalance(userId, amount) > 0;
     }
 }

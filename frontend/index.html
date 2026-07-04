@@ -8,23 +8,23 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --cyan:        #00D4FF;
-      --cyan-dim:    rgba(0, 212, 255, 0.15);
-      --cyan-glow:   rgba(0, 212, 255, 0.35);
-      --gold:        #FFB800;
-      --gold-dim:    rgba(255, 184, 0, 0.15);
-      --purple:      #7C3AED;
-      --purple-dim:  rgba(124, 58, 237, 0.2);
-      --bg:          #04050f;
-      --bg2:         #080c1a;
-      --surface:     rgba(255, 255, 255, 0.04);
-      --surface-h:   rgba(0, 212, 255, 0.06);
-      --border:      rgba(0, 212, 255, 0.12);
-      --border-h:    rgba(0, 212, 255, 0.3);
-      --text:        #E8F4FF;
-      --muted:       rgba(232, 244, 255, 0.45);
-      --input-bg:    rgba(0, 212, 255, 0.04);
-      --input-border:rgba(0, 212, 255, 0.18);
+      --bg:        #FFF8F0;
+      --card-bg:   #FFFFFF;
+      --text:      #3D2E1F;
+      --muted:     #9B8573;
+      --coral:     #FF6B5B;
+      --coral-dim: rgba(255,107,91,0.1);
+      --gold:      #D4914A;
+      --gold-light:#E8A850;
+      --gold-dim:  rgba(212,145,74,0.1);
+      --green:     #6BA587;
+      --green2:    #5CA890;
+      --red:       #E04545;
+      --red-dim:   rgba(224,69,69,0.08);
+      --surface:   rgba(0,0,0,0.02);
+      --border:    rgba(0,0,0,0.06);
+      --border-h:  rgba(0,0,0,0.14);
+      --input-bg:  rgba(0,0,0,0.02);
     }
 
     html, body {
@@ -35,424 +35,202 @@
       overflow: hidden;
     }
 
-    /* ── 粒子画布 ── */
-    #canvas {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 0;
+    .bg-base {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 20%, rgba(255,180,130,0.12) 0%, transparent 50%),
+        radial-gradient(ellipse 60% 80% at 80% 60%, rgba(255,150,100,0.08) 0%, transparent 50%),
+        radial-gradient(ellipse 50% 50% at 40% 80%, rgba(107,165,135,0.05) 0%, transparent 50%);
     }
 
-    /* ── 鼠标光晕 ── */
-    #cursor-glow {
-      position: fixed;
-      width: 500px;
-      height: 500px;
-      border-radius: 50%;
-      background: radial-gradient(circle,
-        rgba(0,212,255,0.07) 0%,
-        rgba(124,58,237,0.04) 40%,
-        transparent 70%);
-      pointer-events: none;
-      transform: translate(-50%, -50%);
-      transition: left 0.12s ease, top 0.12s ease;
-      z-index: 0;
+    /* Floating petals */
+    .petals {
+      position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden;
+    }
+    .petal {
+      position: absolute; bottom: -30px;
+      width: 10px; height: 14px; border-radius: 50% 0 50% 0;
+      background: rgba(255,180,150,0.35);
+      animation: petalFloat linear infinite;
+    }
+    .petal:nth-child(2n) { background: rgba(255,200,170,0.3); border-radius: 0 50% 0 50%; }
+    .petal:nth-child(3n) { background: rgba(107,165,135,0.2); width: 8px; height: 11px; }
+    .petal:nth-child(4n) { background: rgba(255,150,120,0.25); }
+    @keyframes petalFloat {
+      0%   { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0; }
+      10%  { opacity: 1; }
+      90%  { opacity: 0.6; }
+      100% { transform: translateY(-105vh) translateX(60px) rotate(360deg); opacity: 0; }
     }
 
     .page {
-      position: relative;
-      z-index: 1;
-      display: flex;
-      height: 100vh;
-      align-items: center;
-      justify-content: center;
+      position: relative; z-index: 2;
+      display: flex; height: 100vh; align-items: center; justify-content: center;
       padding: 24px;
     }
 
     .container {
-      display: flex;
-      width: 100%;
-      max-width: 920px;
-      min-height: 560px;
-      border-radius: 24px;
-      overflow: hidden;
-      box-shadow:
-        0 0 0 1px var(--border),
-        0 40px 80px rgba(0, 0, 0, 0.7),
-        0 0 60px rgba(0, 212, 255, 0.04);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
+      display: flex; width: 100%; max-width: 960px; min-height: 580px;
+      border-radius: 24px; overflow: hidden;
+      box-shadow: 0 0 0 1px var(--border), 0 20px 60px rgba(0,0,0,0.08);
+      background: var(--card-bg);
     }
 
-    /* ── 品牌侧 ── */
-    .brand {
+    /* ── 植物角色区 ── */
+    .plants-area {
       flex: 1;
-      background: linear-gradient(160deg,
-        rgba(0,212,255,0.08) 0%,
-        rgba(124,58,237,0.06) 50%,
-        rgba(4,5,15,0.95) 100%);
+      background: linear-gradient(170deg,
+        rgba(255,248,240,0.98) 0%,
+        rgba(255,240,228,0.96) 40%,
+        rgba(245,235,220,0.98) 100%);
       border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      padding: 52px 44px;
-      position: relative;
-      overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+      gap: 20px; padding: 40px 30px; position: relative; overflow: hidden;
+      cursor: default;
     }
 
-    .brand::before {
+    /* ground shadow */
+    .plants-area::after {
       content: '';
-      position: absolute;
-      width: 360px;
-      height: 360px;
-      background: radial-gradient(circle, rgba(0,212,255,0.1), transparent 65%);
-      top: -100px;
-      right: -100px;
+      position: absolute; bottom: 20px; left: 15%; width: 70%; height: 6px;
+      background: radial-gradient(ellipse, rgba(0,0,0,0.06) 0%, transparent 70%);
       border-radius: 50%;
       pointer-events: none;
     }
 
-    .brand::after {
-      content: '';
-      position: absolute;
-      width: 220px;
-      height: 220px;
-      background: radial-gradient(circle, rgba(124,58,237,0.12), transparent 65%);
-      bottom: -60px;
-      left: -40px;
-      border-radius: 50%;
-      pointer-events: none;
+    .plant-wrapper {
+      width: 150px; flex-shrink: 0;
+      transition: transform 0.25s ease-out;
+      transform-origin: bottom center;
     }
 
-    .brand-logo {
-      font-size: 1.1rem;
-      font-weight: 800;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: var(--cyan);
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+    .plant-wrapper svg { display: block; width: 100%; height: auto; }
 
-    .brand-logo svg {
-      width: 20px;
-      height: 20px;
-      fill: var(--cyan);
-      filter: drop-shadow(0 0 6px var(--cyan));
-    }
-
-    .brand-title {
-      font-size: 2.5rem;
-      font-weight: 800;
-      line-height: 1.15;
-      margin-bottom: 14px;
-      letter-spacing: -0.5px;
-    }
-
-    .brand-title span {
-      background: linear-gradient(90deg, var(--cyan), #00a8cc);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .brand-sub {
-      font-size: 0.92rem;
-      color: var(--muted);
-      line-height: 1.75;
-      margin-bottom: 44px;
-    }
-
-    /* 装饰卡片 */
-    .deco-cards { display: flex; flex-direction: column; gap: 10px; }
-
-    .deco-card {
-      background: rgba(255,255,255,0.03);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 12px 16px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      animation: floatCard 4s ease-in-out infinite;
-      transition: border-color 0.3s;
-    }
-
-    .deco-card:nth-child(2) { animation-delay: 1.3s; }
-    .deco-card:nth-child(3) { animation-delay: 2.6s; }
-
-    .deco-card:hover { border-color: var(--border-h); }
-
-    @keyframes floatCard {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-4px); }
-    }
-
-    .deco-icon {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1rem;
-      flex-shrink: 0;
-    }
-
-    .deco-icon.cyan   { background: var(--cyan-dim); border: 1px solid rgba(0,212,255,0.2); }
-    .deco-icon.gold   { background: var(--gold-dim); border: 1px solid rgba(255,184,0,0.2); }
-    .deco-icon.purple { background: var(--purple-dim); border: 1px solid rgba(124,58,237,0.25); }
-
-    .deco-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
-    .deco-name { font-size: 0.82rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .deco-val  { font-size: 0.72rem; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
-
-    .deco-badge {
-      font-size: 0.7rem;
-      font-weight: 700;
-      padding: 3px 10px;
-      border-radius: 20px;
-      background: linear-gradient(90deg, var(--gold), #ff9500);
-      color: #000;
-      flex-shrink: 0;
-    }
+    /* 眼睛瞳孔 */
+    .pupil { transition: cx 0.12s ease-out, cy 0.12s ease-out; }
 
     /* ── 表单侧 ── */
     .form-panel {
-      width: 380px;
-      flex-shrink: 0;
-      background: rgba(4, 5, 15, 0.92);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
+      width: 380px; flex-shrink: 0;
+      background: var(--card-bg);
+      display: flex; flex-direction: column; justify-content: center;
       padding: 48px 40px;
     }
 
     .form-header { margin-bottom: 30px; }
-
     .form-header h2 {
-      font-size: 1.6rem;
-      font-weight: 800;
-      margin-bottom: 6px;
-      letter-spacing: -0.3px;
+      font-size: 1.6rem; font-weight: 800; margin-bottom: 6px; letter-spacing: -0.3px;
     }
+    .form-header p { font-size: 0.87rem; color: var(--muted); }
 
-    .form-header p {
-      font-size: 0.87rem;
-      color: var(--muted);
-    }
-
-    /* ── 标签 ── */
+    /* Tabs */
     .tabs {
-      display: flex;
-      background: rgba(0,212,255,0.04);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 4px;
-      margin-bottom: 26px;
-      position: relative;
+      display: flex; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 4px; margin-bottom: 26px; position: relative;
     }
-
     .tab-slider {
-      position: absolute;
-      top: 4px;
-      left: 4px;
-      width: calc(50% - 4px);
-      height: calc(100% - 8px);
-      background: linear-gradient(90deg, rgba(0,212,255,0.2), rgba(0,212,255,0.12));
-      border: 1px solid rgba(0,212,255,0.35);
-      border-radius: 9px;
+      position: absolute; top: 4px; left: 4px;
+      width: calc(50% - 4px); height: calc(100% - 8px);
+      background: linear-gradient(135deg, rgba(255,107,91,0.15), rgba(255,142,83,0.08));
+      border: 1px solid rgba(255,107,91,0.3); border-radius: 9px;
       transition: transform 0.3s cubic-bezier(.4,0,.2,1);
-      box-shadow: 0 0 16px rgba(0,212,255,0.15), inset 0 0 8px rgba(0,212,255,0.05);
     }
-
     .tab-slider.register { transform: translateX(100%); }
-
     .tab-btn {
-      flex: 1;
-      position: relative;
-      z-index: 1;
-      background: none;
-      border: none;
-      color: var(--muted);
-      font-size: 0.88rem;
-      font-weight: 600;
-      padding: 10px 0;
-      cursor: pointer;
-      transition: color 0.25s;
-      font-family: inherit;
+      flex: 1; position: relative; z-index: 1;
+      background: none; border: none; color: var(--muted);
+      font-size: 0.88rem; font-weight: 600; padding: 10px 0;
+      cursor: pointer; transition: color 0.25s; font-family: inherit;
     }
+    .tab-btn.active { color: var(--coral); }
 
-    .tab-btn.active { color: var(--cyan); }
-
-    /* ── 表单 ── */
+    /* Form */
     .form { display: flex; flex-direction: column; gap: 16px; }
 
     .input-group { position: relative; }
-
     .input-group label {
-      display: block;
-      font-size: 0.76rem;
-      font-weight: 600;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 8px;
+      display: block; font-size: 0.76rem; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;
     }
-
     .input-wrap { position: relative; }
-
     .input-wrap input {
-      width: 100%;
-      background: var(--input-bg);
-      border: 1px solid var(--input-border);
-      border-radius: 10px;
-      padding: 13px 44px 13px 42px;
-      color: var(--text);
-      font-size: 0.93rem;
-      font-family: inherit;
-      outline: none;
+      width: 100%; background: var(--input-bg); border: 1px solid var(--border);
+      border-radius: 10px; padding: 13px 44px 13px 42px;
+      color: var(--text); font-size: 0.93rem; font-family: inherit; outline: none;
       transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
     }
-
-    .input-wrap input::placeholder { color: rgba(232,244,255,0.2); }
-
+    .input-wrap input::placeholder { color: rgba(0,0,0,0.2); }
     .input-wrap input:focus {
-      border-color: var(--cyan);
-      background: rgba(0,212,255,0.06);
-      box-shadow: 0 0 0 3px rgba(0,212,255,0.1), 0 0 16px rgba(0,212,255,0.08);
+      border-color: var(--coral); background: var(--card-bg);
+      box-shadow: 0 0 0 3px var(--coral-dim), 0 0 16px var(--coral-dim);
     }
-
     .input-icon {
-      position: absolute;
-      left: 14px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--muted);
-      display: flex;
-      align-items: center;
-      pointer-events: none;
+      position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+      color: var(--muted); display: flex; align-items: center; pointer-events: none;
       transition: color 0.2s;
     }
-
     .input-icon svg { width: 16px; height: 16px; }
-    .input-wrap:focus-within .input-icon { color: var(--cyan); }
+    .input-wrap:focus-within .input-icon { color: var(--coral); }
 
     .eye-btn {
-      position: absolute;
-      right: 12px;
-      top: 50%;
-      transform: translateY(-50%);
-      background: none;
-      border: none;
-      color: var(--muted);
-      cursor: pointer;
-      padding: 4px;
-      display: flex;
-      align-items: center;
-      transition: color 0.2s;
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; color: var(--muted); cursor: pointer;
+      padding: 4px; display: flex; align-items: center; transition: color 0.2s;
     }
-
-    .eye-btn:hover { color: var(--cyan); }
+    .eye-btn:hover { color: var(--coral); }
     .eye-btn svg { width: 16px; height: 16px; }
 
-    /* ── 提交按钮 ── */
+    /* Submit */
     .btn-submit {
-      position: relative;
-      overflow: hidden;
-      width: 100%;
-      padding: 14px;
-      border: 1px solid rgba(0,212,255,0.4);
-      border-radius: 12px;
-      background: linear-gradient(135deg, rgba(0,212,255,0.18), rgba(0,168,204,0.12));
-      color: var(--cyan);
-      font-size: 0.97rem;
-      font-weight: 700;
-      font-family: inherit;
-      cursor: pointer;
-      margin-top: 4px;
-      letter-spacing: 0.5px;
+      position: relative; overflow: hidden; width: 100%; padding: 14px;
+      border: 1px solid rgba(255,107,91,0.35); border-radius: 12px;
+      background: linear-gradient(135deg, rgba(255,107,91,0.15), rgba(255,142,83,0.08));
+      color: var(--coral); font-size: 0.97rem; font-weight: 700;
+      font-family: inherit; cursor: pointer; margin-top: 4px; letter-spacing: 0.5px;
       transition: background 0.2s, box-shadow 0.2s, transform 0.15s, border-color 0.2s;
-      box-shadow: 0 0 20px rgba(0,212,255,0.1), inset 0 0 20px rgba(0,212,255,0.03);
     }
-
     .btn-submit:hover {
-      background: linear-gradient(135deg, rgba(0,212,255,0.28), rgba(0,168,204,0.2));
-      border-color: var(--cyan);
-      box-shadow: 0 0 30px rgba(0,212,255,0.25), 0 4px 20px rgba(0,0,0,0.3);
+      background: linear-gradient(135deg, rgba(255,107,91,0.25), rgba(255,142,83,0.16));
+      border-color: var(--coral);
+      box-shadow: 0 0 20px rgba(255,107,91,0.12);
       transform: translateY(-1px);
     }
-
     .btn-submit:active { transform: translateY(0); }
+    .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-    .btn-submit:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    /* 冲击波 ripple */
     .ripple {
-      position: absolute;
-      border-radius: 50%;
-      background: rgba(0,212,255,0.25);
-      transform: scale(0);
-      animation: rippleAnim 0.6s linear;
-      pointer-events: none;
+      position: absolute; border-radius: 50%;
+      background: rgba(255,107,91,0.2);
+      transform: scale(0); animation: rippleAnim 0.6s linear; pointer-events: none;
     }
-
     @keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }
 
-    /* ── 提示 ── */
     .form-footer {
-      text-align: center;
-      margin-top: 18px;
-      font-size: 0.83rem;
-      color: var(--muted);
+      text-align: center; margin-top: 18px; font-size: 0.83rem; color: var(--muted);
     }
-
     .form-footer a {
-      color: var(--cyan);
-      text-decoration: none;
-      font-weight: 600;
-      cursor: pointer;
-      transition: opacity 0.2s;
+      color: var(--coral); text-decoration: none; font-weight: 600;
+      cursor: pointer; transition: opacity 0.2s;
     }
-
     .form-footer a:hover { opacity: 0.75; }
 
-    /* ── Alert ── */
+    /* Alert */
     .alert {
-      display: none;
-      align-items: center;
-      gap: 8px;
-      padding: 11px 14px;
-      border-radius: 10px;
-      font-size: 0.84rem;
-      font-weight: 500;
-      animation: slideDown 0.22s ease;
-      margin-bottom: 14px;
+      display: none; align-items: center; gap: 8px;
+      padding: 11px 14px; border-radius: 10px; font-size: 0.84rem; font-weight: 500;
+      animation: slideDown 0.22s ease; margin-bottom: 14px;
     }
-
     @keyframes slideDown {
       from { opacity: 0; transform: translateY(-6px); }
       to   { opacity: 1; transform: translateY(0); }
     }
-
     .alert.error {
-      display: flex;
-      background: rgba(255,60,60,0.1);
-      border: 1px solid rgba(255,60,60,0.25);
-      color: #ff8080;
+      display: flex; background: var(--red-dim);
+      border: 1px solid rgba(224,69,69,0.2); color: var(--red);
     }
-
     .alert.success {
-      display: flex;
-      background: rgba(0,212,255,0.08);
-      border: 1px solid rgba(0,212,255,0.25);
-      color: var(--cyan);
+      display: flex; background: rgba(107,165,135,0.1);
+      border: 1px solid rgba(107,165,135,0.2); color: #4A9070;
     }
 
     @keyframes shake {
@@ -464,81 +242,94 @@
       75%      { transform: translateX(-3px); }
       90%      { transform: translateX(3px); }
     }
-
     .shake { animation: shake 0.5s ease; }
-
     .form-pane.hidden { display: none; }
 
     .spinner {
-      display: inline-block;
-      width: 15px;
-      height: 15px;
-      border: 2px solid rgba(0,212,255,0.3);
-      border-top-color: var(--cyan);
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      vertical-align: middle;
-      margin-right: 6px;
+      display: inline-block; width: 15px; height: 15px;
+      border: 2px solid rgba(255,107,91,0.2); border-top-color: var(--coral);
+      border-radius: 50%; animation: spin 0.7s linear infinite;
+      vertical-align: middle; margin-right: 6px;
     }
-
     @keyframes spin { to { transform: rotate(360deg); } }
 
     @media (max-width: 680px) {
-      .brand { display: none; }
+      .plants-area { display: none; }
       .form-panel { width: 100%; }
     }
   </style>
 </head>
 <body>
 
-<canvas id="canvas"></canvas>
-<div id="cursor-glow"></div>
+<div class="bg-base"></div>
+<div class="petals" id="petals"></div>
 
 <div class="page">
   <div class="container" id="mainCard">
 
-    <!-- 品牌侧 -->
-    <div class="brand">
-      <div class="brand-logo">
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-        SeckillPro
+    <!-- 植物角色区 -->
+    <div class="plants-area" id="plantsArea">
+      <!-- 角色 1：高个子 -->
+      <div class="plant-wrapper" id="plant1">
+        <svg viewBox="0 0 180 340" xmlns="http://www.w3.org/2000/svg">
+          <!-- 叶子簇 -->
+          <ellipse cx="65" cy="88" rx="42" ry="32" fill="#7BBFA0" transform="rotate(-12 65 88)"/>
+          <ellipse cx="115" cy="85" rx="38" ry="30" fill="#5CA890" transform="rotate(10 115 85)"/>
+          <ellipse cx="50" cy="72" rx="28" ry="22" fill="#6BA587"/>
+          <ellipse cx="130" cy="75" rx="26" ry="20" fill="#8CC9A8"/>
+          <ellipse cx="90" cy="60" rx="32" ry="26" fill="#6BA587"/>
+          <!-- 茎 -->
+          <rect x="86" y="90" width="8" height="36" rx="4" fill="#5CA890"/>
+          <!-- 花盆 -->
+          <path d="M45,120 L135,120 L122,230 L58,230 Z" fill="#D4914A"/>
+          <rect x="38" y="110" width="104" height="14" rx="5" fill="#E8A850"/>
+          <!-- 左眼 -->
+          <ellipse cx="72" cy="158" rx="13" ry="14" fill="#fff"/>
+          <circle cx="75" cy="158" r="5.5" fill="#3D2E1F" class="pupil" id="p1LeftPupil"/>
+          <!-- 右眼 -->
+          <ellipse cx="108" cy="158" rx="13" ry="14" fill="#fff"/>
+          <circle cx="111" cy="158" r="5.5" fill="#3D2E1F" class="pupil" id="p1RightPupil"/>
+          <!-- 嘴巴 -->
+          <path id="p1Mouth" d="M78,182 Q90,194 102,182" fill="none" stroke="#3D2E1F" stroke-width="2.2" stroke-linecap="round"/>
+          <!-- 腮红 -->
+          <ellipse cx="58" cy="170" rx="7" ry="5" fill="rgba(255,107,91,0.25)"/>
+          <ellipse cx="122" cy="170" rx="7" ry="5" fill="rgba(255,107,91,0.25)"/>
+        </svg>
       </div>
-      <h1 class="brand-title">限时抢购<br><span>速度为王</span></h1>
-      <p class="brand-sub">
-        海量商品，极速秒杀<br>
-        注册即享专属优先购权益
-      </p>
-      <div class="deco-cards">
-        <div class="deco-card">
-          <div class="deco-icon cyan">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#00D4FF" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M8 10h8M8 14h5"/></svg>
-          </div>
-          <div class="deco-info">
-            <span class="deco-name">Switch OLED</span>
-            <span class="deco-val">距开抢 <span class="deco-timer" data-sec="755">12:35</span></span>
-          </div>
-          <span class="deco-badge">-60%</span>
-        </div>
-        <div class="deco-card">
-          <div class="deco-icon gold">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#FFB800" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="3"/><circle cx="12" cy="17" r="1"/></svg>
-          </div>
-          <div class="deco-info">
-            <span class="deco-name">iPhone 16 Pro</span>
-            <span class="deco-val">距开抢 <span class="deco-timer" data-sec="3920">01:05:20</span></span>
-          </div>
-          <span class="deco-badge">-30%</span>
-        </div>
-        <div class="deco-card">
-          <div class="deco-icon purple">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#a78bfa" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-          </div>
-          <div class="deco-info">
-            <span class="deco-name">AirPods Pro</span>
-            <span class="deco-val">距开抢 <span class="deco-timer" data-sec="9000">02:30:00</span></span>
-          </div>
-          <span class="deco-badge">-45%</span>
-        </div>
+
+      <!-- 角色 2：矮圆 -->
+      <div class="plant-wrapper" id="plant2" style="width:135px;">
+        <svg viewBox="0 0 160 310" xmlns="http://www.w3.org/2000/svg">
+          <!-- 圆形叶子 -->
+          <ellipse cx="60" cy="78" rx="36" ry="28" fill="#6BA587" transform="rotate(-8 60 78)"/>
+          <ellipse cx="100" cy="80" rx="34" ry="26" fill="#7BBFA0" transform="rotate(8 100 80)"/>
+          <ellipse cx="80" cy="55" rx="30" ry="24" fill="#5CA890"/>
+          <ellipse cx="48" cy="90" rx="24" ry="18" fill="#8CC9A8"/>
+          <ellipse cx="112" cy="88" rx="22" ry="17" fill="#6BA587"/>
+          <!-- 小花 -->
+          <circle cx="80" cy="28" r="7" fill="rgba(255,180,150,0.7)"/>
+          <circle cx="76" cy="23" r="5" fill="rgba(255,200,170,0.6)"/>
+          <circle cx="84" cy="23" r="5" fill="rgba(255,200,170,0.6)"/>
+          <circle cx="80" cy="19" r="5" fill="rgba(255,220,190,0.6)"/>
+          <circle cx="71" cy="28" r="4" fill="rgba(255,190,160,0.5)"/>
+          <circle cx="89" cy="28" r="4" fill="rgba(255,190,160,0.5)"/>
+          <!-- 茎 -->
+          <rect x="76" y="80" width="8" height="30" rx="4" fill="#5CA890"/>
+          <!-- 花盆（更圆） -->
+          <path d="M42,105 L118,105 L108,210 L52,210 Z" fill="#D4914A"/>
+          <rect x="36" y="96" width="88" height="12" rx="5" fill="#E8A850"/>
+          <!-- 左眼 -->
+          <ellipse cx="63" cy="142" rx="12" ry="13" fill="#fff"/>
+          <circle cx="66" cy="142" r="5" fill="#3D2E1F" class="pupil" id="p2LeftPupil"/>
+          <!-- 右眼 -->
+          <ellipse cx="97" cy="142" rx="12" ry="13" fill="#fff"/>
+          <circle cx="100" cy="142" r="5" fill="#3D2E1F" class="pupil" id="p2RightPupil"/>
+          <!-- 嘴巴 -->
+          <path id="p2Mouth" d="M68,164 Q80,176 92,164" fill="none" stroke="#3D2E1F" stroke-width="2.2" stroke-linecap="round"/>
+          <!-- 腮红 -->
+          <ellipse cx="50" cy="152" rx="6" ry="4.5" fill="rgba(255,107,91,0.25)"/>
+          <ellipse cx="110" cy="152" rx="6" ry="4.5" fill="rgba(255,107,91,0.25)"/>
+        </svg>
       </div>
     </div>
 
@@ -579,7 +370,7 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
               </span>
               <input type="password" id="loginPwd" placeholder="请输入密码" autocomplete="current-password" />
-              <button class="eye-btn" onclick="togglePwd('loginPwd', this)" type="button" aria-label="显示/隐藏密码">
+              <button class="eye-btn" onclick="togglePwd('loginPwd', this)" type="button">
                 <svg id="eyeLogin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
               </button>
             </div>
@@ -608,7 +399,7 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
               </span>
               <input type="password" id="regPwd" placeholder="请设置密码（6位以上）" autocomplete="new-password" />
-              <button class="eye-btn" onclick="togglePwd('regPwd', this)" type="button" aria-label="显示/隐藏密码">
+              <button class="eye-btn" onclick="togglePwd('regPwd', this)" type="button">
                 <svg id="eyeReg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
               </button>
             </div>
@@ -624,80 +415,84 @@
 <script>
 const API_BASE = 'http://localhost:8028';
 
-/* ── 鼠标光晕 ── */
-const glow = document.getElementById('cursor-glow');
-document.addEventListener('mousemove', e => {
-  glow.style.left = e.clientX + 'px';
-  glow.style.top  = e.clientY + 'px';
-});
-
-/* ── 粒子背景（青色系） ── */
+/* ── 飘落花瓣 ── */
 (function () {
-  const canvas = document.getElementById('canvas');
-  const ctx = canvas.getContext('2d');
-  let W, H, particles = [], mouse = { x: -999, y: -999 };
-
-  function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
-
-  function Particle() { this.reset(true); }
-
-  Particle.prototype.reset = function (init) {
-    this.x  = Math.random() * W;
-    this.y  = init ? Math.random() * H : (Math.random() < 0.5 ? -4 : H + 4);
-    this.r  = Math.random() * 1.5 + 0.3;
-    this.alpha = Math.random() * 0.5 + 0.1;
-    this.vx = (Math.random() - 0.5) * 0.25;
-    this.vy = (Math.random() - 0.5) * 0.25;
-    this.hue = Math.random() < 0.6 ? 190 : (Math.random() < 0.5 ? 260 : 42);
-  };
-
-  Particle.prototype.update = function () {
-    const dx = mouse.x - this.x, dy = mouse.y - this.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist < 140) {
-      const f = (140 - dist) / 140;
-      this.vx -= (dx / dist) * f * 0.35;
-      this.vy -= (dy / dist) * f * 0.35;
-    }
-    this.vx *= 0.97; this.vy *= 0.97;
-    this.x += this.vx; this.y += this.vy;
-    if (this.x < -10 || this.x > W + 10 || this.y < -10 || this.y > H + 10) this.reset(false);
-  };
-
-  function init() { resize(); particles = Array.from({ length: 80 }, () => new Particle()); }
-
-  function draw() {
-    ctx.clearRect(0, 0, W, H);
-    for (let i = 0; i < particles.length; i++) {
-      particles[i].update();
-      const p = particles[i];
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fillStyle = `hsla(${p.hue},100%,70%,${p.alpha})`;
-      ctx.fill();
-    }
-    /* 连线 */
-    for (let i = 0; i < particles.length; i++) {
-      for (let j = i + 1; j < particles.length; j++) {
-        const dx = particles[i].x - particles[j].x;
-        const dy = particles[i].y - particles[j].y;
-        const d  = Math.sqrt(dx * dx + dy * dy);
-        if (d < 90) {
-          ctx.beginPath();
-          ctx.strokeStyle = `rgba(0,212,255,${0.1 * (1 - d / 90)})`;
-          ctx.lineWidth = 0.5;
-          ctx.moveTo(particles[i].x, particles[i].y);
-          ctx.lineTo(particles[j].x, particles[j].y);
-          ctx.stroke();
-        }
-      }
-    }
-    requestAnimationFrame(draw);
+  const container = document.getElementById('petals');
+  for (let i = 0; i < 14; i++) {
+    const petal = document.createElement('div');
+    petal.className = 'petal';
+    petal.style.left = Math.random() * 95 + '%';
+    petal.style.animationDuration = (Math.random() * 10 + 10) + 's';
+    petal.style.animationDelay = (Math.random() * 12) + 's';
+    petal.style.width = (Math.random() * 8 + 6) + 'px';
+    petal.style.height = (Math.random() * 12 + 8) + 'px';
+    container.appendChild(petal);
   }
+})();
 
-  window.addEventListener('resize', resize);
-  window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
-  init(); draw();
+/* ── 眼睛追踪 + 身体倾斜 ── */
+(function () {
+  const area = document.getElementById('plantsArea');
+  const plant1 = document.getElementById('plant1');
+  const plant2 = document.getElementById('plant2');
+
+  // 每个角色的眼睛中心坐标 (SVG坐标系)
+  const eyes = {
+    p1: {
+      left:  { cx: 72, cy: 158, id: 'p1LeftPupil' },
+      right: { cx: 108, cy: 158, id: 'p1RightPupil' }
+    },
+    p2: {
+      left:  { cx: 63, cy: 142, id: 'p2LeftPupil' },
+      right: { cx: 97, cy: 142, id: 'p2RightPupil' }
+    }
+  };
+
+  const maxPupilOffset = 4; // 瞳孔最大偏移量
+
+  area.addEventListener('mousemove', function(e) {
+    const rect = area.getBoundingClientRect();
+
+    // 计算鼠标在区域内的相对位置 (0~1)
+    const mx = (e.clientX - rect.left) / rect.width;   // 0=左, 1=右
+    const my = (e.clientY - rect.top) / rect.height;   // 0=上, 1=下
+
+    // 瞳孔偏移
+    const dx = (mx - 0.5) * 2 * maxPupilOffset; // -max~+max
+    const dy = (my - 0.5) * 2 * maxPupilOffset;
+
+    // 更新所有瞳孔
+    Object.values(eyes).forEach(plant => {
+      Object.values(plant).forEach(eye => {
+        const el = document.getElementById(eye.id);
+        if (el) {
+          el.setAttribute('cx', eye.cx + dx);
+          el.setAttribute('cy', eye.cy + dy);
+        }
+      });
+    });
+
+    // 身体倾斜 (左右偏移，最大 ±4deg)
+    const tilt = (mx - 0.5) * 8;
+    plant1.style.transform = `rotate(${tilt}deg)`;
+    // 角色2 略微延迟倾斜，产生层次感
+    plant2.style.transform = `rotate(${tilt * 0.85}deg)`;
+  });
+
+  area.addEventListener('mouseleave', function() {
+    // 复位
+    Object.values(eyes).forEach(plant => {
+      Object.values(plant).forEach(eye => {
+        const el = document.getElementById(eye.id);
+        if (el) {
+          el.setAttribute('cx', eye.cx);
+          el.setAttribute('cy', eye.cy);
+        }
+      });
+    });
+    plant1.style.transform = 'rotate(0deg)';
+    plant2.style.transform = 'rotate(0deg)';
+  });
 })();
 
 /* ── Ripple ── */
@@ -713,19 +508,7 @@ document.querySelectorAll('.btn-submit').forEach(btn => {
   });
 });
 
-/* ── 装饰卡片倒计时 ── */
-setInterval(() => {
-  document.querySelectorAll('.deco-timer').forEach(el => {
-    let s = parseInt(el.dataset.sec, 10);
-    if (s > 0) { s--; el.dataset.sec = s; }
-    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
-    el.textContent = s >= 3600
-      ? `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`
-      : `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
-  });
-}, 1000);
-
-/* ── Tab 切换 ── */
+/* ── Tab 切换（含表情） ── */
 let currentTab = 'login';
 
 function switchTab(tab) {
@@ -735,18 +518,25 @@ function switchTab(tab) {
   const slider = document.getElementById('tabSlider');
   const pLogin = document.getElementById('paneLogin');
   const pReg   = document.getElementById('paneRegister');
+
   if (tab === 'login') {
     slider.classList.remove('register');
     document.getElementById('tabLogin').classList.add('active');
     document.getElementById('tabRegister').classList.remove('active');
     pReg.classList.add('hidden'); pLogin.classList.remove('hidden');
     document.getElementById('formTitle').textContent = '欢迎回来';
+    // 微笑
+    document.getElementById('p1Mouth').setAttribute('d', 'M78,182 Q90,194 102,182');
+    document.getElementById('p2Mouth').setAttribute('d', 'M68,164 Q80,176 92,164');
   } else {
     slider.classList.add('register');
     document.getElementById('tabRegister').classList.add('active');
     document.getElementById('tabLogin').classList.remove('active');
     pLogin.classList.add('hidden'); pReg.classList.remove('hidden');
     document.getElementById('formTitle').textContent = '创建账号';
+    // 惊讶张嘴 O 形
+    document.getElementById('p1Mouth').setAttribute('d', 'M84,180 Q90,168 96,180');
+    document.getElementById('p2Mouth').setAttribute('d', 'M74,162 Q80,152 86,162');
   }
 }
 
